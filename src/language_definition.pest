@@ -1,0 +1,71 @@
+null = { "null"|"empty" }
+boolean = { "true"|"yes"|"false"|"no" }
+decimal = { ASCII_DIGIT*~"."~ASCII_DIGIT+ } //0.1 .1
+integer = { ASCII_DIGIT+ } //1
+string = {"\"" ~ (!"\"" ~ ANY)* ~ "\""}
+
+ARRAY = { "[" ~ (WHITE_SPACE* ~ VALUE ~ (WHITE_SPACE* ~ ",")? )* ~ WHITE_SPACE* ~ "]" }
+
+ident = { ASCII_ALPHA ~ (ASCII_ALPHANUMERIC|":"|"_")* }
+
+fncall_object = { ident }
+fncall_module_name = { ident }
+fncall_function_name = { ident }
+fncall = { (fncall_object ~ ".")? ~ (fncall_module_name ~ "/")? ~ fncall_function_name ~ WHITE_SPACE* ~ "(" ~ WHITE_SPACE* ~ ( VALUE ~ WHITE_SPACE* ~ ("," ~ WHITE_SPACE*)? )* ~ VALUE? ~ WHITE_SPACE* ~ ")" ~ WHITE_SPACE* ~ ";" ? }
+
+unary_operator = { ("!"|"-") }
+
+UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ VALUE }
+
+//binary operator cannot self-chain
+BINARY_OPERATION = {
+    (
+        ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)
+        ~ WHITE_SPACE* ~
+        (
+            WHITE_SPACE* ~
+            (sum|sub|mul|div|rem|and|or|xor|slf|srg|eq|neq|gt|lt|gte|lte)
+            ~ WHITE_SPACE* ~
+            (
+                "("~(UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)~")"
+                |
+                (UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)
+                |
+                "("~(BINARY_OPERATION)~")"
+            )
+        )+
+    )
+}
+
+VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boolean|fncall|ident }
+ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ ident ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE ~ WHITE_SPACE* ~ ";"? }
+
+
+
+PREDICATE = { fncall|ident|boolean }
+POSITIVE_ACTION = { STATEMENTS }
+NEGATIVE_ACTION = { STATEMENTS }
+IF_BLOCK = { "if" ~ WHITE_SPACE* ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ POSITIVE_ACTION ~ "}" ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ NEGATIVE_ACTION ~ "}")? }
+WHILE_BLOCK = { "while" ~ WHITE_SPACE* ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
+
+STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|ASSIGNMENT|fncall))* ~ WHITE_SPACE* }
+
+
+and = {"&&"}
+or = {"||"}
+xor = {"^"}
+slf = {"<<"}
+srg = {">>"}
+
+sum = {"+"}
+sub = {"-"}
+mul = {"*"}
+div = {"/"}
+rem = {"%"}
+
+eq = {"=="}
+neq = {"!="}
+gt = {">"}
+lt = {"<"}
+gte = {">="}
+lte = {"<="}
