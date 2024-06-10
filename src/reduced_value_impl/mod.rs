@@ -1,4 +1,4 @@
-use crate::value_parsing::{FullValue, ReducedValue};
+use crate::block_parsing::value_parsing::{FullValue, ReducedValue};
 
 pub(crate) mod impl_operators;
 
@@ -89,3 +89,79 @@ impl_try_into_for_reduced_value! {
     i8, i16, i32, i64, i128, isize,
     f32, f64
 }
+
+
+impl From<()> for ReducedValue {
+    fn from(_value: ()) -> Self {
+        ReducedValue::Null
+    }
+}
+
+impl From<bool> for ReducedValue  {
+    fn from(value: bool) -> Self {
+        ReducedValue::Boolean(value)
+    }
+}
+
+impl From<f32> for ReducedValue {
+    fn from(value: f32) -> Self {
+        ReducedValue::Decimal(value as f64)
+    }
+}
+
+impl From<f64> for ReducedValue {
+    fn from(value: f64) -> Self {
+        ReducedValue::Decimal(value)
+    }
+}
+
+macro_rules! impl_into_reduced_value {
+    ($($type:ty),+) => {
+        $(
+
+            impl From<$type> for ReducedValue {
+                fn from(value: $type) -> Self {
+                    ReducedValue::Integer(value as i128)
+                }
+            }
+        )+
+    };
+}
+
+impl_into_reduced_value! { u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize }
+
+
+impl<T: Into<ReducedValue>> From<Option<T>> for ReducedValue {
+    fn from(value: Option<T>) -> Self {
+        match value {
+            None => ReducedValue::Null,
+            Some(value) => value.into()
+        }
+    }
+}
+
+impl<T: Into<ReducedValue>> From<Vec<T>> for ReducedValue {
+    fn from(value: Vec<T>) -> Self {
+        ReducedValue::Array(value.into_iter().map(|item| item.into()).collect())
+    }
+}
+
+
+impl<T: Into<ReducedValue>, const LEN: usize> From<[T; LEN]> for ReducedValue {
+    fn from(value: [T; LEN]) -> Self {
+        ReducedValue::Array(Vec::from(value.map(|item| item.into())))
+    }
+}
+
+impl From<&str> for ReducedValue {
+    fn from(value: &str) -> Self {
+        ReducedValue::String(value.to_string())
+    }
+}
+
+impl From<String> for ReducedValue {
+    fn from(value: String) -> Self {
+        ReducedValue::String(value)
+    }
+}
+

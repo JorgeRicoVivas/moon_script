@@ -13,6 +13,13 @@ fncall_module_name = { ident }
 fncall_function_name = { ident }
 fncall = { (fncall_object ~ ".")? ~ (fncall_module_name ~ "/")? ~ fncall_function_name ~ WHITE_SPACE* ~ "(" ~ WHITE_SPACE* ~ ( VALUE ~ WHITE_SPACE* ~ ("," ~ WHITE_SPACE*)? )* ~ VALUE? ~ WHITE_SPACE* ~ ")" ~ WHITE_SPACE* ~ ";" ? }
 
+property_params = {
+    "("~
+    (WHITE_SPACE* ~ VALUE ~ WHITE_SPACE* ~("," ~ WHITE_SPACE*)?)*
+    ~ ")"
+}
+property = { ident ~ (WHITE_SPACE* ~ "." ~ WHITE_SPACE* ~ ident ~ WHITE_SPACE* ~ property_params? )+ }
+
 unary_operator = { ("!"|"-") }
 
 UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ VALUE }
@@ -20,16 +27,16 @@ UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ VALUE }
 //binary operator cannot self-chain
 BINARY_OPERATION = {
     (
-        ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)
+        ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
         ~ WHITE_SPACE* ~
         (
             WHITE_SPACE* ~
             (sum|sub|mul|div|rem|and|or|xor|slf|srg|eq|neq|gt|lt|gte|lte)
             ~ WHITE_SPACE* ~
             (
-                "("~(UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)~")"
+                "("~(UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)~")"
                 |
-                (UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|fncall|ident)
+                (UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
                 |
                 "("~(BINARY_OPERATION)~")"
             )
@@ -37,18 +44,17 @@ BINARY_OPERATION = {
     )
 }
 
-VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boolean|fncall|ident }
-ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ ident ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE ~ WHITE_SPACE* ~ ";"? }
+VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boolean|property|fncall|ident }
 
+PREDICATE = { VALUE }
 
+ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ (property|ident) ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
+IF_BLOCK = { "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}" ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")? }
+WHILE_BLOCK = { "while" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
+RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
 
-PREDICATE = { fncall|ident|boolean }
-POSITIVE_ACTION = { STATEMENTS }
-NEGATIVE_ACTION = { STATEMENTS }
-IF_BLOCK = { "if" ~ WHITE_SPACE* ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ POSITIVE_ACTION ~ "}" ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ NEGATIVE_ACTION ~ "}")? }
-WHILE_BLOCK = { "while" ~ WHITE_SPACE* ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
-
-STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|ASSIGNMENT|fncall))* ~ WHITE_SPACE* }
+STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|ASSIGNMENT|RETURN_CALL|fncall))* ~ WHITE_SPACE* }
+BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~ EOI  }
 
 
 and = {"&&"}

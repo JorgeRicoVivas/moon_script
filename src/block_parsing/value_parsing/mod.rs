@@ -1,9 +1,14 @@
+use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
+use std::mem;
 use std::str::FromStr;
 
 use pest::iterators::Pair;
 
-use crate::{ASTFunction, Base, ContextBuilder, ExecutingContext, Rule};
+use crate::block_parsing::{Base, ContextBuilder};
+use crate::execution::ASTFunction;
 use crate::external_utils::on_error_iter::IterOnError;
+use crate::Rule;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ReducedValue {
@@ -13,6 +18,68 @@ pub enum ReducedValue {
     Decimal(f64),
     String(String),
     Array(Vec<ReducedValue>),
+}
+
+impl ReducedValue {
+    pub(crate) fn type_name(&self) -> &'static str {
+        match self {
+            Self::Null => "null",
+            Self::Boolean(_) => "bool",
+            Self::Integer(_) => "int",
+            Self::Decimal(_) => "decimal",
+            Self::String(_) => "string",
+            Self::Array(_) => "array",
+        }
+    }
+}
+
+impl TryFrom<FullValue> for ReducedValue{
+
+    type Error = ();
+    fn try_from(value: FullValue) -> Result<Self, Self::Error> {
+        Ok(match value{
+            FullValue::Null => {ReducedValue::Null}
+            FullValue::Boolean(v) => {ReducedValue::Boolean(v)}
+            FullValue::Integer(v) => {ReducedValue::Integer(v)}
+            FullValue::Decimal(v) => {ReducedValue::Decimal(v)}
+            FullValue::String(v) => {ReducedValue::String(v)}
+            FullValue::Array(v) => {
+                let mut values = Vec::with_capacity(v.len());
+                for value in v{
+                    values.push(ReducedValue::try_from(value)?)
+                };
+                ReducedValue::Array(values)
+            }
+            _=>{return Err(())}
+        })
+    }
+}
+
+impl Display for ReducedValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ReducedValue::Null => f.write_str("null"),
+            ReducedValue::Boolean(bool) => f.write_str(&*bool.to_string()),
+            ReducedValue::Integer(int) => f.write_str(&*int.to_string()),
+            ReducedValue::Decimal(dec) => f.write_str(&*dec.to_string()),
+            ReducedValue::String(string) => f.write_str(&format!("\"{string}\"")),
+            ReducedValue::Array(array) => {
+                let mut result = String::new();
+                result.push('[');
+                let mut is_first_value = true;
+                array.iter().for_each(|value| {
+                    if is_first_value {
+                        result.push_str(&format!("{value}"));
+                        is_first_value = false;
+                    } else {
+                        result.push_str(&format!(", {value}"));
+                    }
+                });
+                result.push(']');
+                f.write_str(&*result)
+            }
+        }
+    }
 }
 
 
@@ -26,6 +93,7 @@ pub enum FullValue {
     Array(Vec<FullValue>),
     Function(ASTFunction),
     Variable { block_level: usize, var_index: usize },
+    DirectVariable(usize),
 }
 
 impl FullValue {
@@ -40,49 +108,14 @@ impl FullValue {
             FullValue::Function(_) => "function",
             FullValue::Variable { block_level, var_index } => return context_builder
                 .get_variable_at(*block_level, *var_index).unwrap()
-                .current_known_value.type_name(context_builder),
+                .current_known_value.as_ref()
+                .map(|know_value| know_value.type_name(context_builder))
+                .unwrap_or_else(|| "Unknown Value Type".to_string()),
+            FullValue::DirectVariable(_) => { unreachable!() }
         }.to_string()
     }
 
-    pub(crate) fn is_function(&self) -> bool {
-        match self {
-            Self::Function { .. } => true,
-            _ => false
-        }
-    }
-
-    fn resolve_value<'selflf>(&'selflf self, execution_context: &'selflf ExecutingContext) -> Result<ReducedValue, ()> {
-        Ok(match self {
-            FullValue::Null => ReducedValue::Null,
-            FullValue::Boolean(bool) => ReducedValue::Boolean(*bool),
-            FullValue::Decimal(decimal) => ReducedValue::Decimal(*decimal),
-            FullValue::Integer(integer) => ReducedValue::Integer(*integer),
-            FullValue::String(string) => ReducedValue::String(string.clone()),
-            FullValue::Array(value) => {
-                let mut res = Vec::with_capacity(value.len());
-                for value in value.iter().map(|value| value.resolve_value(execution_context)) {
-                    match value {
-                        Ok(value) => res.push(value),
-                        Err(error) => return Err(error),
-                    }
-                }
-                ReducedValue::Array(res)
-            }
-            FullValue::Function(function) => {
-                let mut reduced_args = Vec::with_capacity(function.args.len());
-                for value in function.args.iter().map(|value| value.resolve_value(execution_context)) {
-                    match value {
-                        Ok(value) => reduced_args.push(value),
-                        Err(error) => return Err(error),
-                    }
-                }
-                (function.function)(reduced_args).unwrap()
-            }
-            FullValue::Variable { block_level, var_index } => execution_context.variables[*block_level][*var_index].value.clone(),
-        })
-    }
-
-    fn is_simple_value(&self) -> bool {
+    pub(crate) fn is_simple_value(&self) -> bool {
         match self {
             FullValue::Null | FullValue::Boolean(_) | FullValue::Decimal(_) |
             FullValue::Integer(_) | FullValue::String(_) => true,
@@ -91,7 +124,7 @@ impl FullValue {
         }
     }
 
-    fn resolve_value_no_context(self) -> ReducedValue {
+    pub(crate) fn resolve_value_no_context(self) -> ReducedValue {
         match self {
             FullValue::Null => ReducedValue::Null,
             FullValue::Boolean(bool) => ReducedValue::Boolean(bool),
@@ -111,6 +144,8 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
     while token.as_rule().eq(&Rule::VALUE) {
         token = token.into_inner().next().unwrap()
     }
+    let token_str = token.as_str();
+    let token_rule = token.as_rule();
     let res = match token.as_rule() {
         Rule::BINARY_OPERATION => {
             let res = &base.binary_operation_parser
@@ -119,7 +154,7 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                 })
                 .map_infix(|lhs, op, rhs| {
                     let operator = op.as_str();
-                    println!("Found op {operator} left {lhs:?}, right {rhs:?}");
+                    log::trace!("Found op {operator} left {lhs:?}, right {rhs:?}");
                     let function = base.find_binary_operator(operator);
 
                     if function.is_none() || lhs.is_err() || rhs.is_err() {
@@ -132,7 +167,7 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                     }
                     let (lhs, rhs, function) = (lhs.unwrap(), rhs.unwrap(), function.unwrap());
 
-                    Ok(if function.can_inline && lhs.is_simple_value() && rhs.is_simple_value() {
+                    Ok(if function.can_inline_result && lhs.is_simple_value() && rhs.is_simple_value() {
                         let (lhs, rhs) = (lhs.resolve_value_no_context(), rhs.resolve_value_no_context());
                         FullValue::from((function.function)(vec![lhs, rhs])
                             .map_err(|err| vec![format!("Inlining error: {err}")])?
@@ -141,28 +176,27 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                         FullValue::Function(ASTFunction { function: function.function, args: vec![lhs, rhs] })
                     })
                 })
-                .parse(token.clone().into_inner());
+                .parse(token.into_inner());
             res.clone()
         }
 
         Rule::UNARY_OPERATION => {
-            let mut token = token.clone().into_inner();
+            let mut token = token.into_inner();
             let operator = token.next().unwrap().as_str();
             let value = token.next().unwrap();
             let value = build_value_token(value, base, context)?;
             let function = base.find_unary_operator(operator)
                 .ok_or_else(|| vec![format!("Could not find binary operator {operator}")])?;
-            Ok(if function.can_inline && value.is_simple_value() {
+            Ok(if function.can_inline_result && value.is_simple_value() {
                 let reduced_value = value.resolve_value_no_context();
                 FullValue::from((function.function)(vec![reduced_value]).map_err(|err| vec![err])?)
             } else {
                 FullValue::Function(ASTFunction { function: function.function, args: vec![value] })
             })
         }
-
         Rule::ARRAY => {
             let mut errors = Vec::new();
-            let res = token.clone().into_inner().map(|pair| build_value_token(pair, base, context))
+            let res = token.into_inner().map(|pair| build_value_token(pair, base, context))
                 .on_errors(|error| errors.extend(error.into_iter()))
                 .collect();
             if !errors.is_empty() {
@@ -172,10 +206,11 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
         }
         Rule::fncall => {
             let mut errors = Vec::new();
-            let mut token = token.clone().into_inner();
+            let mut token = token.into_inner();
+            let line = token.as_str();
             let mut object_type = None;
             let mut module = None;
-            let mut function_name = token.as_str();
+            let function_name: &str;
             loop {
                 let current_token = token.next().unwrap();
                 let current_token_as_str = current_token.as_str();
@@ -183,7 +218,7 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                 match current_token.as_rule() {
                     Rule::fncall_object => object_type = Some(context.find_variable(&current_token_as_str)
                         .map(|(_, _, var)| var)
-                        .ok_or_else(|| vec![format!("Variable {current_token_as_str} not in scope")])?
+                        .ok_or_else(|| vec![format!("Variable {current_token_as_str} not in scope (when inlining function for line '{line}')")])?
                         .associated_type_name.to_string()),
                     Rule::fncall_module_name => module = Some(current_token_as_str),
                     Rule::fncall_function_name => {
@@ -211,7 +246,7 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                     }
                     vec![base]
                 })?;
-            Ok(if function.can_inline && args.iter().all(|arg| arg.is_simple_value()) {
+            Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
                 let inlined_res = (function.function)(args.into_iter().map(|arg| arg.resolve_value_no_context()).collect())
                     .map_err(|error_description| vec![format!("Could not inline function due to {error_description}")]);
                 FullValue::from(inlined_res?)
@@ -220,24 +255,29 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
             })
         }
         Rule::ident => {
-            let (block_level, var_index, variable) =
-                context.find_variable(token.as_str())
-                    .ok_or_else(|| vec![format!("Variable {} not in scope", token.as_str())])?;
-            Ok(if variable.current_known_value.is_simple_value() {
-                variable.current_known_value.clone()
+            let ident = token.as_str();
+            if let Some((block_level, var_index, variable)) = context.find_variable(ident) {
+                Ok(if variable.current_known_value.as_ref().is_some_and(|known_value| known_value.is_simple_value()) {
+                    variable.current_known_value.clone().unwrap()
+                } else {
+                    FullValue::Variable { block_level, var_index }
+                })
+            } else if let Some(value) = base.constants.get(ident) {
+                Ok(FullValue::from(value.clone()))
             } else {
-                FullValue::Variable { block_level, var_index }
-            })
+                Err(vec![format!("Variable {} not in scope (When searching for ident)", ident)])
+            }
         }
+        Rule::property => Ok(parse_property(token, base, context, None, None)?),
         Rule::null => Ok(FullValue::Null),
         Rule::boolean => Ok(FullValue::Boolean(token.as_str().eq("true") || token.as_str().eq("yes"))),
         Rule::decimal => Ok(FullValue::Decimal(f64::from_str(token.as_str())
-            .map_err(|p| vec![
+            .map_err(|_| vec![
                 format!("Couldn't parse {} into a decimal number between {} and {}", token.as_str(), f64::MIN, f64::MAX)
             ])?))
         ,
         Rule::integer => Ok(FullValue::Integer(i128::from_str(token.as_str())
-            .map_err(|p| vec![
+            .map_err(|_| vec![
                 format!("Couldn't parse {} into a integer number between {} and {}", token.as_str(), i128::MIN, i128::MAX)
             ])?)),
         Rule::string => {
@@ -248,6 +288,54 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
         }
         _ => Ok(FullValue::Null),
     };
-    println!("Parsed token {:?} = {} into value {res:?}", token.as_rule(), token.as_str());
+    log::trace!("Parsed token {token_rule:?} = {token_str} into value {res:?}");
     res
+}
+
+pub(crate) fn parse_property(token: Pair<Rule>, base: &Base, context: &mut ContextBuilder, prepend_on_last_property: Option<&'static str>, mut extra_value_for_last_property: Option<FullValue>) -> Result<FullValue, Vec<String>> {
+    let line = token.as_str();
+    let mut idents = token.into_inner();
+    let variable = idents.next().unwrap();
+    let (block_level, var_index, variable) =
+        context.find_variable(variable.as_str())
+            .ok_or_else(|| vec![format!("Variable {} not in scope (When parsing property in line '{line}')", variable.as_str())])?;
+    let mut last_associated_type_name = Some(variable.associated_type_name.clone());
+    let mut stack = if variable.current_known_value.as_ref().is_some_and(|known_value| known_value.is_simple_value()) {
+        variable.current_known_value.clone().unwrap()
+    } else {
+        FullValue::Variable { block_level, var_index }
+    };
+    let mut idents_and_params = idents.collect::<VecDeque<_>>();
+    while !idents_and_params.is_empty() {
+        let property = idents_and_params.pop_front().unwrap();
+        let is_last_ident = idents_and_params.iter().all(|rule| rule.as_rule() != Rule::ident);
+        let prepend = if !is_last_ident || prepend_on_last_property.is_none() { "get_" } else { prepend_on_last_property.unwrap() };
+        let prepended = format!("{prepend}{}", property.as_str());
+        let function = base.find_function(last_associated_type_name.clone(), None, &*prepended)
+            .or_else(|| base.find_function(last_associated_type_name.clone(), None, property.as_str()))
+            .ok_or_else(|| vec![format!(
+                "There is no function {prepended} nor {} for the property {} whose type is {}",
+                property.as_str(),
+                property.as_str(),
+                last_associated_type_name.clone().unwrap_or_else(|| "Unknown type".to_string()))]
+            )?;
+        let mut args = vec![stack];
+        if idents_and_params.front().as_ref().is_some_and(|rule| rule.as_rule() == Rule::property_params) {
+            for arg in idents_and_params.pop_front().unwrap().into_inner().map(|value| build_value_token(value, base, context)) {
+                args.push(arg?);
+            }
+        }
+        if is_last_ident && extra_value_for_last_property.is_some() {
+            args.push(mem::take(&mut extra_value_for_last_property).unwrap());
+        }
+        last_associated_type_name = function.return_type_name.clone();
+        stack = if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
+            (function.function)(args.into_iter().map(|arg| arg.resolve_value_no_context()).collect())
+                .map_err(|_| vec![format!("Could not properly inline getter function matching property {}", property.as_str())])?
+                .into()
+        } else {
+            FullValue::Function(ASTFunction { function: function.function, args })
+        }
+    }
+    Ok(stack)
 }
