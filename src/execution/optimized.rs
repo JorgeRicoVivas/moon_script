@@ -1,5 +1,6 @@
 use std::mem;
 use std::ops::Range;
+use arrayvec::ArrayVec;
 
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
@@ -7,6 +8,7 @@ use smallvec::SmallVec;
 use crate::block_parsing::AST;
 use crate::block_parsing::value_parsing::{FullValue, ReducedValue};
 use crate::execution::Block;
+use crate::function::VBFunction;
 use crate::FUNCTION_ELEMENTS_LEN;
 
 const OPTIMIZED_AST_CONTENT_TYPE_BLOCK: u8 = 0;
@@ -57,7 +59,7 @@ pub enum OptimizedBlock {
 
 #[derive(Clone, Debug)]
 struct OptimizedASTFunction {
-    function: fn(Vec<ReducedValue>) -> Result<ReducedValue, String>,
+    function: VBFunction,
     args: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_VALUE>,
 }
 
@@ -95,6 +97,8 @@ pub struct OptimizedAST {
     values: Vec<OptimizedFullValue>,
 }
 
+
+
 impl From<AST> for OptimizedAST {
     fn from(mut unoptimized_ast: AST) -> Self {
         let original_statements = mem::take(&mut unoptimized_ast.statements);
@@ -102,8 +106,8 @@ impl From<AST> for OptimizedAST {
             variables: Vec::new(),
             parameterized_variables: unoptimized_ast.parameterized_variables,
             statements: MultiDirection { len: 0, start: 0 },
-            blocks: vec![],
-            values: vec![],
+            blocks: Default::default(),
+            values: Default::default(),
         };
         res.statements = res.optimize_blocks(original_statements);
         res.variables = unoptimized_ast.variables.into_iter().map(|value| {
@@ -191,11 +195,9 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         Self { ast, context: OptimizedExecutingContext { variables: ast.variables.clone() } }
     }
 
-    pub fn push_variable<Name: ToString, Variable: Into<ReducedValue>>(mut self, name: Name, variable: Variable) -> Self {
-        let (name, variable) = (name.to_string(), variable.into());
-        if let Some(variable_index) = self.ast.parameterized_variables.get(&name) {
-            let context = &mut self.context;
-            context.variables[*variable_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(variable.into()) };
+    pub fn push_variable<Variable: Into<ReducedValue>>(mut self, name: &str, variable: Variable) -> Self {
+        if let Some(variable_index) = self.ast.parameterized_variables.get(name) {
+            self.context.variables[*variable_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(variable.into().into()) };
         }
         self
     }
@@ -240,11 +242,7 @@ impl OptimizedExecutingContext {
             OptimizedBlock::OptimizedAssignament { var_index, value } =>
                 self.variables[*var_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(self.resolve_value(value.dir, ast)?) },
             OptimizedBlock::FnCall(function) => {
-                let mut args = Vec::with_capacity(function.args.len);
-                for value in function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)) {
-                    args.push(value?);
-                }
-                (function.function)(args).map_err(|error| error)?;
+                (function.function).execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?;
             }
             OptimizedBlock::ReturnCall(value) => {
                 let value = self.resolve_value(value.dir, ast)?;
@@ -269,20 +267,7 @@ impl OptimizedExecutingContext {
                 ReducedValue::Array(res)
             }
             OptimizedFullValue::Function(function) => {
-                /*
-                let mut reduced_args = SmallVec::<[ReducedValue; FUNCTION_ELEMENTS_LEN]>::with_capacity(function.args.len);
-                for value in function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)) {
-                    reduced_args.push(value?)
-                }
-                (function.function)(reduced_args).unwrap()
-                return (function.function)(Vec::new());
-                */
-
-                let mut reduced_args = Vec::with_capacity(function.args.len);
-                for value in function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)) {
-                    reduced_args.push(value?)
-                }
-                (function.function)(reduced_args).unwrap()
+                function.function.execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?
             }
             OptimizedFullValue::DirectVariable(variable_index) => {
                 self.resolve_variable(ast, *variable_index)?

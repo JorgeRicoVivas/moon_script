@@ -27,6 +27,7 @@ fn main() {
     let mut base = Base::default();
 
     base.add_constant("MY_CONST", 5);
+    /*
     base.add_function(FunctionDefinition::new("object_function", |_| Ok(ReducedValue::Boolean(true)))
         .knwon_return_type_name("boolean").associated_type_name("MyCustomType").module_name("Mod"));
     base.add_function(FunctionDefinition::new("function", |_| Ok(ReducedValue::Boolean(true)))
@@ -59,7 +60,9 @@ fn main() {
                                                   Ok(().into())
                                               })
         .knwon_return_type_name("int").associated_type_name("my_custom_type").module_name("Mod"));
+    */
 
+    base.add_function(FunctionDefinition::new("get_val", || 123890));
     let base = base;
 
     let mut context = ContextBuilder::default();
@@ -118,7 +121,7 @@ fn main() {
 
 fn test_speed(res: AST, optimized_ast: OptimizedAST) {
     const MINIMUM_TO_COUNT: i32 = 10;
-    const REPS: i32 = MINIMUM_TO_COUNT + (100000);
+    const REPS: i32 = MINIMUM_TO_COUNT + (20000);
     let mut marks = Vec::new();
     for i in 0..REPS {
         let now = Instant::now();
@@ -178,7 +181,7 @@ fn test_speed(res: AST, optimized_ast: OptimizedAST) {
         let executor = optimized_ast.executor()
             .push_variable("d", 1)
             .push_variable("e", 2)
-            .push_variable("f", 3);
+            .push_variable("f", 0.3);
         let now = Instant::now();
         let _execution_res = executor.execute();
         let elapsed = now.elapsed();
@@ -192,6 +195,20 @@ fn test_speed(res: AST, optimized_ast: OptimizedAST) {
     println!("-sum: {:?}", duration_sum.as_secs_f64());
     let values = vec![FullValue::Boolean(true), FullValue::Integer(8)];
     test_function(Box::new(values.into_iter().map(|value| ReducedValue::try_from(value).unwrap())));
+
+    let mut marks = Vec::new();
+    for i in 0..REPS {
+        let now = Instant::now();
+        let _execution_res = optimized_ast.executor().execute();
+        let elapsed = now.elapsed();
+        if i > MINIMUM_TO_COUNT {
+            marks.push(elapsed);
+        }
+    }
+    let marks_len = marks.len();
+    let duration_sum = marks.into_iter().sum::<Duration>();
+    println!("-Standard optimized no variables avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
+    println!("-sum: {:?}", duration_sum.as_secs_f64());
 }
 
 fn test_function(a: Box<dyn Iterator<Item=ReducedValue>>) {
@@ -201,6 +218,7 @@ fn test_function(a: Box<dyn Iterator<Item=ReducedValue>>) {
 mod reduced_value_impl;
 
 pub mod block_parsing;
+pub mod function;
 
 /*
 const INPUT: &'static str = r#"
@@ -239,9 +257,7 @@ const INPUT: &'static str = r#"
             "#;
  */
 
-const INPUT: &'static str = r#"
-            return f.asocA(1,2,3,4,5,6,7,8,9,10);
-            "#;
+const INPUT: &'static str = r#"f = get_val();  if f<0{return 0;} else { if f>1{return 1;} else {return f;} }"#;
 
 fn print_pairs_iter<'a, Rule: RuleType, RuleIter: Iterator<Item=Pair<'a, Rule>>>(pairs: RuleIter, ident: u8) {
     pairs.into_iter().for_each(|p| {

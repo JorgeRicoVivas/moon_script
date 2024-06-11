@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::block_parsing::value_parsing::{FullValue, ReducedValue};
 
 pub(crate) mod impl_operators;
@@ -19,63 +20,88 @@ impl From<ReducedValue> for FullValue {
     }
 }
 
-impl TryInto<()> for ReducedValue {
+
+impl TryFrom<ReducedValue> for () {
     type Error = ();
 
-    fn try_into(self) -> Result<(), Self::Error> {
-        match self {
+    fn try_from(value: ReducedValue) -> Result<Self, Self::Error> {
+        match value {
             ReducedValue::Null => Ok(()),
             _ => Err(())
         }
     }
 }
 
-impl TryInto<bool> for ReducedValue {
+impl TryFrom<ReducedValue> for bool {
     type Error = ();
 
-    fn try_into(self) -> Result<bool, Self::Error> {
-        Ok(match self {
+    fn try_from(value: ReducedValue) -> Result<Self, Self::Error> {
+        Ok(match value {
             ReducedValue::Boolean(bool) => bool,
             ReducedValue::Integer(int) => int >= 1,
             ReducedValue::Decimal(decimal) => decimal >= 1.0,
+            ReducedValue::String(string) => {
+                if string.eq("true") || string.eq("no") {
+                    true
+                } else if string.eq("false") || string.eq("no") {
+                    false
+                } else {
+                    return i128::from_str(&string).ok().map(|n| n > 1)
+                        .or_else(|| f64::from_str(&string).ok().map(|decimal| decimal >= 1.0))
+                        .ok_or(());
+                }
+            }
             _ => return Err(()),
         })
     }
 }
 
-impl TryInto<std::vec::IntoIter<ReducedValue>> for ReducedValue {
+impl TryFrom<ReducedValue> for String {
     type Error = ();
 
-    fn try_into(self) -> Result<std::vec::IntoIter<ReducedValue>, Self::Error> {
-        Ok(match self {
+    fn try_from(value: ReducedValue) -> Result<Self, Self::Error> {
+        match value {
+            ReducedValue::String(string) => Ok(string),
+            _ => Err(())
+        }
+    }
+}
+
+impl TryFrom<ReducedValue> for std::vec::IntoIter<ReducedValue> {
+    type Error = ();
+
+    fn try_from(value: ReducedValue) -> Result<Self, Self::Error> {
+        Ok(match value {
             ReducedValue::Array(values) => values.into_iter(),
             _ => return Err(()),
         })
     }
 }
 
-impl TryInto<Vec<ReducedValue>> for ReducedValue {
-    type Error = ();
-
-    fn try_into(self) -> Result<Vec<ReducedValue>, Self::Error> {
-        Ok(match self {
+impl From<ReducedValue> for Vec<ReducedValue> {
+    fn from(value: ReducedValue) -> Self {
+        match value {
             ReducedValue::Array(values) => values,
-            _ => return Err(()),
-        })
+            own => vec![own]
+        }
     }
 }
 
-macro_rules! impl_try_into_for_reduced_value {
+
+
+macro_rules! impl_try_from_for_reduced_value {
     ($($type:ty),+) => {
         $(
-            impl TryInto<$type> for ReducedValue {
+            impl TryFrom<ReducedValue> for $type{
                 type Error = ();
 
-                fn try_into(self) -> Result<$type, Self::Error> {
-                    Ok(match self {
+                fn try_from(value: ReducedValue) -> Result<Self, Self::Error> {
+                    Ok(match value {
                         ReducedValue::Boolean(bool) => (if bool {1}else{0}) as $type,
                         ReducedValue::Integer(int) => int as $type,
                         ReducedValue::Decimal(decimal) => decimal as $type,
+                        ReducedValue::Array(array) => return Self::try_from(array.get(0).ok_or(())?.clone()).map_err(|_|()),
+                        ReducedValue::String(string)=><$type>::from_str(&string).map_err(|_|())?,
                         _ => return Err(()),
                     })
                 }
@@ -84,11 +110,13 @@ macro_rules! impl_try_into_for_reduced_value {
     };
 }
 
-impl_try_into_for_reduced_value! {
+impl_try_from_for_reduced_value! {
     u8, u16, u32, u64, u128, usize,
     i8, i16, i32, i64, i128, isize,
     f32, f64
 }
+
+
 
 
 impl From<()> for ReducedValue {
@@ -97,7 +125,7 @@ impl From<()> for ReducedValue {
     }
 }
 
-impl From<bool> for ReducedValue  {
+impl From<bool> for ReducedValue {
     fn from(value: bool) -> Self {
         ReducedValue::Boolean(value)
     }
@@ -164,4 +192,3 @@ impl From<String> for ReducedValue {
         ReducedValue::String(value)
     }
 }
-

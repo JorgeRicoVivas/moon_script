@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::mem;
 
 use itertools::Itertools;
@@ -8,10 +9,12 @@ use pest::pratt_parser::{Assoc, Op, PrattParser};
 use pest_derive::Parser;
 use rustc_hash::FxHashMap;
 
-use crate::reduced_value_impl;
 use crate::block_parsing::value_parsing::{build_value_token, FullValue, ReducedValue};
 use crate::execution::{ASTExecutor, Block, RuntimeVariable};
 use crate::external_utils::on_error_iter::IterOnError;
+use crate::function::{ToAbstractFunction, VBFunction};
+use crate::reduced_value_impl;
+use crate::reduced_value_impl::impl_operators;
 
 pub(crate) mod value_parsing;
 
@@ -21,13 +24,29 @@ pub struct SimpleParser;
 
 pub struct FunctionInfo {
     can_inline_result: bool,
-    function: fn(Vec<ReducedValue>) -> Result<ReducedValue, String>,
+    function: VBFunction,
     return_type_name: Option<String>,
 }
 
+
 impl FunctionInfo {
-    fn new(function: fn(Vec<ReducedValue>) -> Result<ReducedValue, String>) -> FunctionInfo {
+    pub(crate) fn new<Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
+    (function: AbstractFunction) -> Self {
+        Self::new_raw(function.abstract_function())
+    }
+
+    pub(crate) fn new_raw(function: VBFunction) -> Self {
         Self { function, return_type_name: None, can_inline_result: false }
+    }
+
+    pub(crate) fn inline(mut self) -> FunctionInfo {
+        self.can_inline_result = true;
+        self
+    }
+
+    pub(crate) fn knwon_return_type_name<Name: ToString>(mut self, return_type_name: Name) -> FunctionInfo {
+        self.return_type_name = Some(return_type_name.to_string());
+        self
     }
 }
 
@@ -59,22 +78,14 @@ impl Default for Base {
             functions: Default::default(),
             built_in_associated_functions: Default::default(),
             built_in_functions: Default::default(),
-            binary_operators: reduced_value_impl::impl_operators::get_binary_operators().into_iter()
-                .map(|(function_name, operation)| {
-                    (function_name.to_string(), FunctionInfo {
-                        can_inline_result: true,
-                        function: operation,
-                        return_type_name: None,
-                    })
+            binary_operators: impl_operators::get_binary_operators().into_iter()
+                .map(|(name,function)|{
+                    (name.to_string(), FunctionInfo::new(function).inline())
                 })
                 .collect(),
-            unary_operators: reduced_value_impl::impl_operators::get_unary_operators().into_iter()
-                .map(|(function_name, operation)| {
-                    (function_name.to_string(), FunctionInfo {
-                        can_inline_result: true,
-                        function: operation,
-                        return_type_name: None,
-                    })
+            unary_operators: impl_operators::get_unary_operators().into_iter()
+                .map(|(name,function)|{
+                    (name.to_string(), FunctionInfo::new(function).inline())
                 })
                 .collect(),
             binary_operation_parser: PrattParser::new()
@@ -88,13 +99,11 @@ impl Default for Base {
                     | Op::infix(Rule::and, Assoc::Left) | Op::infix(Rule::rem, Assoc::Left)),
             constants: Default::default(),
         };
-        res.add_function(FunctionDefinition::new("print", |values| {
-            println!("{}", values.into_iter().map(|value| format!("{value}")).join(", "));
-            Ok(ReducedValue::Null)
+        res.add_function(FunctionDefinition::new("print", |value: String| {
+            println!("{value}");
         }));
-        res.add_function(FunctionDefinition::new("println", |values| {
-            println!("{}", values.into_iter().map(|value| format!("{value}")).join(", "));
-            Ok(ReducedValue::Null)
+        res.add_function(FunctionDefinition::new("println", |value: String| {
+            println!("{value}");
         }));
         res
     }
@@ -109,9 +118,10 @@ pub struct FunctionDefinition {
 }
 
 impl FunctionDefinition {
-    pub fn new<Name: Into<String>>(function_name: Name, function: fn(Vec<ReducedValue>) -> Result<ReducedValue, String>) -> FunctionDefinition {
+    pub fn new<Name: Into<String>, Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
+    (function_name: Name, function: AbstractFunction) -> FunctionDefinition {
         Self {
-            function_info: FunctionInfo::new(function),
+            function_info: FunctionInfo::new_raw(function.abstract_function()),
             function_name: function_name.into(),
             module_name: None,
             associated_type_name: None,
@@ -471,7 +481,7 @@ fn optimize_variables(context: &mut ContextBuilder, inlineable_variables: Vec<(S
 }
 
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct AST {
     pub(crate) statements: Vec<Block>,
     pub(crate) variables: Vec<RuntimeVariable>,

@@ -1,3 +1,4 @@
+use crate::block_parsing::{Base, FunctionInfo};
 use crate::block_parsing::value_parsing::ReducedValue;
 
 const ARITHMETIC_RESULT_BOOL: u8 = 0;
@@ -34,10 +35,9 @@ fn arithmetic_result(arg1: &ReducedValue, arg2: &ReducedValue) -> Option<u8> {
     Some(if top_right_level >= top_left_level { top_right_level } else { top_left_level })
 }
 
-pub(crate) fn get_unary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>) -> Result<ReducedValue, String>)> {
+pub(crate) fn get_unary_operators() -> Vec<(&'static str, fn(ReducedValue) -> Result<ReducedValue, String>)> {
     vec![
-        ("!", |mut args| {
-            let arg = args.swap_remove(0);
+        ("!", |arg| {
             match arg {
                 ReducedValue::Boolean(bool) => Ok(ReducedValue::Boolean(!bool)),
                 ReducedValue::Integer(int) => Ok(ReducedValue::Integer(!int)),
@@ -45,8 +45,7 @@ pub(crate) fn get_unary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>) 
                     Err("Unary operator '!' only can be applied between booleans or integers".to_string()),
             }
         }),
-        ("-", |mut args| {
-            let arg = args.swap_remove(0);
+        ("-", |arg| {
             match arg {
                 ReducedValue::Integer(int) => Ok(ReducedValue::Integer(-int)),
                 ReducedValue::Decimal(dec) => Ok(ReducedValue::Decimal(-dec)),
@@ -58,21 +57,20 @@ pub(crate) fn get_unary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>) 
 }
 
 
-pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>) -> Result<ReducedValue, String>)> {
+pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(ReducedValue, ReducedValue) -> Result<ReducedValue, String>)> {
     vec![
-        ("+", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-            match (&arg_1, &arg_2){
-                (ReducedValue::String(string_1), ReducedValue::String(string_2))=>{
+        ("+", |arg_1, arg_2| {
+            match (&arg_1, &arg_2) {
+                (ReducedValue::String(string_1), ReducedValue::String(string_2)) => {
                     return Ok(ReducedValue::String(format!("{string_1}{string_2}")));
                 }
-                (ReducedValue::String(string_1), arg_2)=>{
+                (ReducedValue::String(string_1), arg_2) => {
                     return Ok(ReducedValue::String(format!("{string_1}{arg_2}")));
                 }
-                (arg_1, ReducedValue::String(string_2))=>{
+                (arg_1, ReducedValue::String(string_2)) => {
                     return Ok(ReducedValue::String(format!("{arg_1}{string_2}")));
                 }
-                _=>{}
+                _ => {}
             }
 
             match arithmetic_choice(arg_1, arg_2,
@@ -91,25 +89,21 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                 }
             }
         }),
-        ("-", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
+        ("-", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 && !bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Integer(int_1.checked_sub(int_2).unwrap_or(i128::MIN))),
                               |dec_1, dec_2| Ok(ReducedValue::Decimal(dec_1 - dec_2)))
                 .map_err(|_| "Operator '-' can only be applied between booleans, integers or decimals".to_string())?
         }),
-        ("*", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("*", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 && bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Integer(int_1.checked_mul(int_2).unwrap_or(i128::MAX))),
                               |dec_1, dec_2| Ok(ReducedValue::Decimal(dec_1 * dec_2)))
                 .map_err(|_| "Operator '*' can only be applied between booleans, integers or decimals".to_string())?
         }),
-        ("/", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
+        ("/", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |_, _| Err("Operator '/' cannot be applied between booleans".to_string()),
                               |int_1, int_2| {
@@ -125,18 +119,14 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                               |dec_1, dec_2| Ok(ReducedValue::Decimal(dec_1 / dec_2)))
                 .map_err(|_| "Operator '/' can only be applied between integers or decimals".to_string())?
         }),
-        ("%", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("%", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |_, _| Err("Operator '%' cannot be applied between booleans".to_string()),
                               |int_1, int_2| Ok(ReducedValue::Integer(int_1.checked_rem(int_2).unwrap_or(0))),
                               |dec_1, dec_2| Ok(ReducedValue::Decimal(dec_1 % dec_2)))
                 .map_err(|_| "Operator '%' can only be applied between integers or decimals".to_string())?
         }),
-        ("&&", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("&&", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
                 (ReducedValue::Boolean(bool_1), ReducedValue::Boolean(bool_2)) => {
                     ReducedValue::Boolean(bool_1 && bool_2)
@@ -149,9 +139,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                 _ => return Err("Operator '&&' can only be applied between boolean, integers or decimals".to_string()),
             })
         }),
-        ("^", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("^", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
                 (ReducedValue::Boolean(bool_1), ReducedValue::Boolean(bool_2)) => {
                     ReducedValue::Boolean(bool_1 ^ bool_2)
@@ -164,9 +152,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                 _ => return Err("Operator '^' can only be applied between boolean, integers or decimals".to_string()),
             })
         }),
-        ("<<", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("<<", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
                 args @ (ReducedValue::Decimal(_) | ReducedValue::Integer(_), ReducedValue::Decimal(_) | ReducedValue::Integer(_)) => {
                     let int_1 = TryInto::<i128>::try_into(args.0).unwrap();
@@ -176,9 +162,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                 _ => return Err("Operator '<<' can only be applied between integers or decimals".to_string()),
             })
         }),
-        (">>", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        (">>", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
                 args @ (ReducedValue::Decimal(_) | ReducedValue::Integer(_), ReducedValue::Decimal(_) | ReducedValue::Integer(_)) => {
                     let int_1 = TryInto::<i128>::try_into(args.0).unwrap();
@@ -188,43 +172,34 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(Vec<ReducedValue>)
                 _ => return Err("Operator '>>' can only be applied between integers or decimals".to_string()),
             })
         }),
-        ("==", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
+        ("==", |arg_1, arg_2| {
             Ok(ReducedValue::Boolean(arg_1.eq(&arg_2)))
         }),
-        ("!=", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
+        ("!=", |arg_1, arg_2| {
             Ok(ReducedValue::Boolean(arg_1.ne(&arg_2)))
         }),
-        (">", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
+        (">", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 > bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Boolean(int_1 > int_2)),
                               |dec_1, dec_2| Ok(ReducedValue::Boolean(dec_1 > dec_2)))
                 .map_err(|_| "Operator '>' can only be applied between boolean, integers or decimals".to_string())?
         }),
-        ("<", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("<", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 < bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Boolean(int_1 < int_2)),
                               |dec_1, dec_2| Ok(ReducedValue::Boolean(dec_1 < dec_2)))
                 .map_err(|_| "Operator '<' can only be applied between boolean, integers or decimals".to_string())?
         }),
-        (">=", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        (">=", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 >= bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Boolean(int_1 >= int_2)),
                               |dec_1, dec_2| Ok(ReducedValue::Boolean(dec_1 >= dec_2)))
                 .map_err(|_| "Operator '>?' can only be applied between boolean, integers or decimals".to_string())?
         }),
-        ("<=", |mut args| {
-            let (arg_2, arg_1) = (args.swap_remove(1), args.swap_remove(0));
-
+        ("<=", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(ReducedValue::Boolean(bool_1 <= bool_2)),
                               |int_1, int_2| Ok(ReducedValue::Boolean(int_1 <= int_2)),

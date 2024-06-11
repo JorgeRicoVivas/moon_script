@@ -33,24 +33,23 @@ impl ReducedValue {
     }
 }
 
-impl TryFrom<FullValue> for ReducedValue{
-
+impl TryFrom<FullValue> for ReducedValue {
     type Error = ();
     fn try_from(value: FullValue) -> Result<Self, Self::Error> {
-        Ok(match value{
-            FullValue::Null => {ReducedValue::Null}
-            FullValue::Boolean(v) => {ReducedValue::Boolean(v)}
-            FullValue::Integer(v) => {ReducedValue::Integer(v)}
-            FullValue::Decimal(v) => {ReducedValue::Decimal(v)}
-            FullValue::String(v) => {ReducedValue::String(v)}
+        Ok(match value {
+            FullValue::Null => { ReducedValue::Null }
+            FullValue::Boolean(v) => { ReducedValue::Boolean(v) }
+            FullValue::Integer(v) => { ReducedValue::Integer(v) }
+            FullValue::Decimal(v) => { ReducedValue::Decimal(v) }
+            FullValue::String(v) => { ReducedValue::String(v) }
             FullValue::Array(v) => {
                 let mut values = Vec::with_capacity(v.len());
-                for value in v{
+                for value in v {
                     values.push(ReducedValue::try_from(value)?)
                 };
                 ReducedValue::Array(values)
             }
-            _=>{return Err(())}
+            _ => { return Err(()); }
         })
     }
 }
@@ -169,17 +168,17 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
 
                     Ok(if function.can_inline_result && lhs.is_simple_value() && rhs.is_simple_value() {
                         let (lhs, rhs) = (lhs.resolve_value_no_context(), rhs.resolve_value_no_context());
-                        FullValue::from((function.function)(vec![lhs, rhs])
-                            .map_err(|err| vec![format!("Inlining error: {err}")])?
+
+                        FullValue::from(
+                            function.function.execute_into_iter([Ok(lhs), Ok(rhs)].into_iter()).map_err(|err| vec![format!("Inlining error: {err}")])?
                         )
                     } else {
-                        FullValue::Function(ASTFunction { function: function.function, args: vec![lhs, rhs] })
+                        FullValue::Function(ASTFunction { function: function.function.clone(), args: vec![lhs, rhs] })
                     })
                 })
                 .parse(token.into_inner());
             res.clone()
         }
-
         Rule::UNARY_OPERATION => {
             let mut token = token.into_inner();
             let operator = token.next().unwrap().as_str();
@@ -189,9 +188,11 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                 .ok_or_else(|| vec![format!("Could not find binary operator {operator}")])?;
             Ok(if function.can_inline_result && value.is_simple_value() {
                 let reduced_value = value.resolve_value_no_context();
-                FullValue::from((function.function)(vec![reduced_value]).map_err(|err| vec![err])?)
+                FullValue::from(
+                    function.function.execute_iter([Ok(reduced_value)].into_iter())
+                        .map_err(|err| vec![err])?)
             } else {
-                FullValue::Function(ASTFunction { function: function.function, args: vec![value] })
+                FullValue::Function(ASTFunction { function: function.function.clone(), args: vec![value] })
             })
         }
         Rule::ARRAY => {
@@ -247,11 +248,11 @@ pub fn build_value_token(mut token: Pair<Rule>, base: &Base, context: &mut Conte
                     vec![base]
                 })?;
             Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
-                let inlined_res = (function.function)(args.into_iter().map(|arg| arg.resolve_value_no_context()).collect())
-                    .map_err(|error_description| vec![format!("Could not inline function due to {error_description}")]);
-                FullValue::from(inlined_res?)
+                let inlined_res = function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
+                    .map_err(|error_description| vec![format!("Could not inline function due to {error_description}")])?;
+                FullValue::from(inlined_res)
             } else {
-                FullValue::Function(ASTFunction { function: function.function, args })
+                FullValue::Function(ASTFunction { function: function.function.clone(), args })
             })
         }
         Rule::ident => {
@@ -330,11 +331,11 @@ pub(crate) fn parse_property(token: Pair<Rule>, base: &Base, context: &mut Conte
         }
         last_associated_type_name = function.return_type_name.clone();
         stack = if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
-            (function.function)(args.into_iter().map(|arg| arg.resolve_value_no_context()).collect())
+            function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
                 .map_err(|_| vec![format!("Could not properly inline getter function matching property {}", property.as_str())])?
                 .into()
         } else {
-            FullValue::Function(ASTFunction { function: function.function, args })
+            FullValue::Function(ASTFunction { function: function.function.clone(), args })
         }
     }
     Ok(stack)
