@@ -8,6 +8,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use crate::execution::ast::AST;
 use crate::execution::ast::Statement;
+use crate::execution::RuntimeError;
 use crate::function::VBFunction;
 use crate::HashMap;
 use crate::parsing::value_parsing::{FullValue, VBValue};
@@ -26,7 +27,7 @@ impl<const CONTENT_TYPE: u8> From<MultiDirection<CONTENT_TYPE>> for Direction<CO
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct MultiDirection<const CONTENT_TYPE: u8> {
     start: usize,
     len: usize,
@@ -88,7 +89,7 @@ struct OptimizedRuntimeVariable {
     value: OptimizedVariable,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OptimizedAST {
     variables: Vec<OptimizedRuntimeVariable>,
     parameterized_variables: HashMap<String, usize>,
@@ -206,7 +207,7 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         self
     }
 
-    pub fn execute(mut self) -> Result<VBValue, String> {
+    pub fn execute(mut self) -> Result<VBValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&self.ast.blocks[block], &self.ast)? {
                 return Ok(res);
@@ -215,13 +216,14 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         Ok(VBValue::Null)
     }
 
-    pub fn execute_stack(mut self) -> Result<VBValue, String> {
+    pub fn execute_stack(mut self) -> Result<VBValue, RuntimeError> {
         let mut stacked_execution_blocks = VecDeque::with_capacity(25);
         self.ast.statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
         while let Some(block_dir) = stacked_execution_blocks.pop_front() {
             match &self.ast.blocks[block_dir] {
                 OptimizedBlock::WhileBlock { condition, statements } => {
-                    if self.context.resolve_value(condition.dir, &self.ast)?.try_into().map_err(|_| "Couldn't solve a while loop's condition".to_string())? {
+                    if self.context.resolve_value(condition.dir, &self.ast)?.try_into()
+                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "while", function_error_message: "".to_string() })?{
                         stacked_execution_blocks.push_front(block_dir);
                         statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
                     }
@@ -230,7 +232,8 @@ impl<'ast> OptimizedASTExecutor<'ast> {
                     for if_block_dir in blocks.iter() {
                         match &self.ast.blocks[if_block_dir] {
                             OptimizedBlock::IfBlock { condition, statements } => {
-                                if self.context.resolve_value(condition.dir, &self.ast)?.try_into().map_err(|_| "Couldn't solve on an if's condition".to_string())? {
+                                if self.context.resolve_value(condition.dir, &self.ast)?.try_into()
+                                    .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })? {
                                     statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
                                     break;
                                 }
@@ -257,10 +260,11 @@ impl<'ast> OptimizedASTExecutor<'ast> {
 }
 
 impl OptimizedExecutingContext {
-    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<Option<VBValue>, String> {
+    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<Option<VBValue>, RuntimeError> {
         match block {
             OptimizedBlock::WhileBlock { condition, statements } => {
-                while self.resolve_value(condition.dir, ast)?.try_into().map_err(|_| "Couldn't solve a while loop's condition".to_string())? {
+                while self.resolve_value(condition.dir, ast)?.try_into()
+                    .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })?{
                     for statement in statements.iter().map(|block_index| &ast.blocks[block_index]) {
                         if let Some(res) = self.execute_block(statement, ast)? {
                             return Ok(Some(res));
@@ -273,7 +277,8 @@ impl OptimizedExecutingContext {
                 for if_block_dir in blocks.iter() {
                     match &ast.blocks[if_block_dir] {
                         OptimizedBlock::IfBlock { condition, statements } => {
-                            if self.resolve_value(condition.dir, ast)?.try_into().map_err(|_| "Couldn't solve on an if's condition".to_string())? {
+                            if self.resolve_value(condition.dir, ast)?.try_into()
+                                .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })?{
                                 for statement in statements.iter().map(|block_index| &ast.blocks[block_index]) {
                                     if let Some(res) = self.execute_block(statement, ast)? {
                                         return Ok(Some(res));
@@ -299,7 +304,7 @@ impl OptimizedExecutingContext {
         Ok(None)
     }
 
-    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<VBValue, String> {
+    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<VBValue, RuntimeError> {
         Ok(match &ast.values[value_dir] {
             OptimizedFullValue::Null => VBValue::Null,
             OptimizedFullValue::Boolean(v) => VBValue::Boolean(v.clone()),
@@ -314,7 +319,8 @@ impl OptimizedExecutingContext {
                 VBValue::Array(res)
             }
             OptimizedFullValue::Function(function) => {
-                function.function.execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?
+                function.function.execute_iter(function.args.iter()
+                    .map(|value_dir| self.resolve_value(value_dir, ast)))?
             }
             OptimizedFullValue::DirectVariable(variable_index) => {
                 self.resolve_variable(ast, *variable_index)?
@@ -322,7 +328,7 @@ impl OptimizedExecutingContext {
         })
     }
 
-    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<VBValue, String> {
+    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<VBValue, RuntimeError> {
         let mut should_inline = true;
         let value = match &self.variables[variable_index].value {
             OptimizedVariable::Value(value) => {

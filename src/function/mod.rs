@@ -1,8 +1,10 @@
 use alloc::fmt::{Debug, Formatter};
 use alloc::rc::Rc;
-use alloc::string::{String, ToString};
+use alloc::string::ToString;
+
 use paste::paste;
 
+use crate::execution::RuntimeError;
 use crate::parsing::value_parsing::VBValue;
 
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
@@ -12,7 +14,7 @@ pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
 
 #[derive(Clone)]
 pub struct VBFunction {
-    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<VBValue, String>>) -> Result<VBValue, String>>,
+    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<VBValue, RuntimeError>>) -> Result<VBValue, RuntimeError>>,
     number_of_params: usize,
 }
 
@@ -32,12 +34,12 @@ impl Debug for VBFunction {
 
 impl VBFunction {
     #[inline]
-    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<VBValue, String> where ValuesIter: Iterator<Item=Result<VBValue, String>> {
+    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<VBValue, RuntimeError> where ValuesIter: Iterator<Item=Result<VBValue, RuntimeError>> {
         (self.function)(&mut values)
     }
 
     #[inline]
-    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<VBValue, String> where ValuesIter: IntoIterator<Item=Result<VBValue, String>> {
+    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<VBValue, RuntimeError> where ValuesIter: IntoIterator<Item=Result<VBValue, RuntimeError>> {
         (self.function)(&mut values.into_iter())
     }
 }
@@ -57,12 +59,12 @@ macro_rules! impl_to_wrapped_function {
                     VBFunction {
                         function: Rc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
-                                .ok_or_else(|| "A value is missing")??)
-                                .map_err(|_| "Couldn't parse a value")?;)*
+                                .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)
+                                .map_err(|_| RuntimeError::CannotParseArgument{} )?;)*
 
                             self($( paste::item!{[<$param_names:lower>]}  ),*)
                                 .map(|return_value| return_value.into())
-                                .map_err(|err|err.to_string())
+                                .map_err(|err| RuntimeError::FunctionError{ function_error_message:err.to_string() })
                         }),
                         number_of_params: $params_len,
                     }
@@ -81,10 +83,12 @@ macro_rules! impl_to_wrapped_function {
                     VBFunction {
                         function: Rc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
-                                .ok_or_else(|| "A value is missing")??)
-                                .map_err(|_| "Couldn't parse a value")?;)*
+                                .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)
+                                .map_err(|_| RuntimeError::CannotParseArgument{} )?;)*
 
-                            Ok(self($( paste::item!{[<$param_names:lower>]}  ),*).into())
+                            Ok(self($( paste::item!{[<$param_names:lower>]}  ),*)
+
+                            .into())
                         }),
                         number_of_params: $params_len,
                     }

@@ -6,6 +6,7 @@ use colored::Colorize;
 use simple_detailed_error::{SimpleError, SimpleErrorDetail, SimpleErrorExplanation};
 #[cfg(feature = "colorization")]
 use string_colorization::{foreground, style};
+use crate::execution::RuntimeError;
 
 use crate::parsing::Rule;
 
@@ -33,10 +34,10 @@ pub enum ASTBuildingError<'input> {
     OperatorNotFound { operator: &'input str },
     FunctionNotFound { function_name: &'input str, associated_to_type: Option<String>, module: Option<&'input str> },
     PropertyFunctionNotFound { preferred_property_to_find: String, original_property: &'input str, typename: String },
-    CouldntInlineFunction { function_name: &'input str, execution_error_message: String },
+    CouldntInlineFunction { function_name: &'input str, runtime_error: RuntimeError },
     CouldntInlineGetter { execution_error_message: String, property: &'input str },
-    CouldntInlineUnaryOperator { execution_error_message: String, operator: &'input str },
-    CouldntInlineBinaryOperator { execution_error_message: String, operator: &'input str },
+    CouldntInlineUnaryOperator { operator: &'input str, runtime_error: RuntimeError },
+    CouldntInlineBinaryOperator { operator: &'input str, runtime_error: RuntimeError },
     CouldntInlineVariableOfUnknownType { variable_name: &'input str },
     CannotParseInteger { value: &'input str, lower_bound: i128, upper_bound: i128 },
     CannotParseDecimal { value: &'input str, lower_bound: f64, upper_bound: f64 },
@@ -87,8 +88,8 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
                 #[cfg(feature = "colorization")]
                 colorization_markers.push((original_property, style::Clear + foreground::Red));
             }
-            ASTBuildingError::CouldntInlineFunction { function_name, execution_error_message } => {
-                explanation = format!("The constant function {} was tried to be inlined, but it returned this error:\n{execution_error_message}.", function_name.bold());
+            ASTBuildingError::CouldntInlineFunction { function_name, runtime_error } => {
+                explanation = format!("The constant function {} was tried to be inlined, but it returned this error:\n{}.", function_name.bold(), runtime_error.explain());
                 #[cfg(feature = "colorization")]
                 colorization_markers.push((function_name, style::Clear + foreground::Red));
             }
@@ -97,13 +98,13 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
                 #[cfg(feature = "colorization")]
                 colorization_markers.push((property, style::Clear + foreground::Red));
             }
-            ASTBuildingError::CouldntInlineUnaryOperator { operator, execution_error_message } => {
-                explanation = format!("The constant operator {} was tried to be inlined, but it returned this error:\n{execution_error_message}.", operator.bold());
+            ASTBuildingError::CouldntInlineUnaryOperator { operator, runtime_error } => {
+                explanation = format!("The constant operator {} was tried to be inlined, but it returned this error:\n{}.", operator.bold(), runtime_error.explain());
                 #[cfg(feature = "colorization")]
                 colorization_markers.push((operator, style::Clear + foreground::Red));
             }
-            ASTBuildingError::CouldntInlineBinaryOperator { operator, execution_error_message } => {
-                explanation = format!("The constant binary operator {} was tried to be inlined, but it returned this error:\n{execution_error_message}.", operator.bold());
+            ASTBuildingError::CouldntInlineBinaryOperator { operator, runtime_error } => {
+                explanation = format!("The constant binary operator {} was tried to be inlined, but it returned this error:\n{}.", operator.bold(), runtime_error.explain());
                 #[cfg(feature = "colorization")]
                 colorization_markers.push((operator, style::Clear + foreground::Red));
             }

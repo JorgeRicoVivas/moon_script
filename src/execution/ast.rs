@@ -1,15 +1,14 @@
-use core::mem;
 use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
-use alloc::vec;
 use alloc::vec::Vec;
+use core::mem;
 
-use crate::execution::{ASTFunction, ConditionalStatements, RuntimeVariable};
+use crate::execution::{ASTFunction, ConditionalStatements, RuntimeError, RuntimeVariable};
 use crate::execution::optimized_ast::OptimizedAST;
 use crate::HashMap;
 use crate::parsing::value_parsing::{FullValue, VBValue};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AST {
     pub(crate) statements: Vec<Statement>,
     pub(crate) variables: Vec<RuntimeVariable>,
@@ -42,10 +41,11 @@ pub struct ExecutingContext {
 }
 
 impl ExecutingContext {
-    fn execute_block(&mut self, block: &Statement) -> Result<Option<VBValue>, Vec<String>> {
+    fn execute_block(&mut self, block: &Statement) -> Result<Option<VBValue>, RuntimeError> {
         match block {
             Statement::WhileBlock { condition, statements } => {
-                while self.resolve_value(condition.clone()).map_err(|e| vec![e])?.try_into().map_err(|_| vec!["Couldn't solve a while loop's condition".to_string()])? {
+                while self.resolve_value(condition.clone())?.try_into()
+                    .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "while", function_error_message: "".to_string() })? {
                     for statement in statements.iter() {
                         if let Some(res) = self.execute_block(statement)? {
                             return Ok(Some(res));
@@ -55,7 +55,8 @@ impl ExecutingContext {
             }
             Statement::IfElseBlock { conditional_statements: conditional_blocks } => {
                 for block in conditional_blocks {
-                    if self.resolve_value(block.condition.clone()).map_err(|e| vec![e])?.try_into().map_err(|_| vec!["Couldn't solve an if block's condition".to_string()])? {
+                    if self.resolve_value(block.condition.clone())?.try_into()
+                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })? {
                         for statement in block.statements.iter() {
                             if let Some(res) = self.execute_block(statement)? {
                                 return Ok(Some(res));
@@ -67,19 +68,19 @@ impl ExecutingContext {
             }
             Statement::UnoptimizedAssignament { .. } => { unreachable!() }
             Statement::OptimizedAssignament { var_index, value } => {
-                self.variables[*var_index] = RuntimeVariable::new(self.resolve_value(value.clone()).map_err(|e| vec![e])?)
+                self.variables[*var_index] = RuntimeVariable::new(self.resolve_value(value.clone())?)
             }
             Statement::FnCall(function) => {
-                function.function.execute_iter(function.args.iter().map(|arg| self.resolve_value(arg.clone()))).map_err(|e| vec![e])?;
+                function.function.execute_iter(function.args.iter().map(|arg| self.resolve_value(arg.clone())))?;
             }
             Statement::ReturnCall(value) => {
-                return Ok(Some(self.resolve_value(value.clone()).map_err(|e| vec![e])?));
+                return Ok(Some(self.resolve_value(value.clone())?));
             }
         }
         Ok(None)
     }
 
-    fn resolve_value(&mut self, value: FullValue) -> Result<VBValue, String> {
+    fn resolve_value(&mut self, value: FullValue) -> Result<VBValue, RuntimeError> {
         Ok(match value {
             FullValue::Null => VBValue::Null,
             FullValue::Boolean(bool) => VBValue::Boolean(bool),
@@ -97,7 +98,8 @@ impl ExecutingContext {
                 VBValue::Array(res)
             }
             FullValue::Function(function) =>
-                function.function.execute_iter(function.args.iter().map(|arg| self.resolve_value(arg.clone())))?,
+                function.function.execute_iter(function.args.iter()
+                    .map(|arg| self.resolve_value(arg.clone())))?,
             FullValue::Variable { .. } => unreachable!(),
             FullValue::DirectVariable(variable_index) => {
                 let variable = mem::replace(&mut self.variables[variable_index].value, FullValue::Null);
@@ -127,7 +129,7 @@ impl<'ast> ASTExecutor<'ast> {
         self
     }
 
-    pub fn execute(mut self) -> Result<VBValue, Vec<String>> {
+    pub fn execute(mut self) -> Result<VBValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&block)? {
                 return Ok(res);

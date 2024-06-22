@@ -213,7 +213,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                         let (lhs, rhs) = (lhs.resolve_value_no_context(), rhs.resolve_value_no_context());
                         FullValue::from(
                             function.function.execute_into_iter([Ok(lhs), Ok(rhs)].into_iter())
-                                .map_err(|err| vec![ASTBuildingError::CouldntInlineFunction { function_name: operator, execution_error_message: err }.into()])?
+                                .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineBinaryOperator { operator, runtime_error }.into()])?
                         )
                     } else {
                         FullValue::Function(ASTFunction { function: function.function.clone(), args: vec![lhs, rhs] })
@@ -233,7 +233,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                 let reduced_value = value.resolve_value_no_context();
                 FullValue::from(
                     function.function.execute_iter([Ok(reduced_value)].into_iter())
-                        .map_err(|err| vec![ASTBuildingError::CouldntInlineUnaryOperator { operator, execution_error_message: err }.into()])?)
+                        .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineUnaryOperator { operator, runtime_error }.into()])?)
             } else {
                 FullValue::Function(ASTFunction { function: function.function.clone(), args: vec![value] })
             })
@@ -284,7 +284,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                 .ok_or_else(|| vec![ASTBuildingError::FunctionNotFound { function_name, associated_to_type: object_type.clone(), module }.into()])?;
             Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
                 let inlined_res = function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
-                    .map_err(|execution_error_message| vec![ASTBuildingError::CouldntInlineFunction { function_name, execution_error_message }.into()])?;
+                    .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineFunction { function_name, runtime_error }.into()])?;
                 FullValue::from(inlined_res)
             } else {
                 FullValue::Function(ASTFunction { function: function.function.clone(), args })
@@ -362,8 +362,7 @@ pub(crate) fn parse_property<'input>(token: Pair<'input, Rule>, base: &Engine, c
         last_associated_type_name = function.return_type_name.clone();
         stack = if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
             function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
-                .map_err(|function_message| vec![ASTBuildingError::CouldntInlineGetter { execution_error_message: function_message, property: property.as_str() }.into()])?
-                .into()
+                .map_err(|err|vec![err.into()])?.into()
         } else {
             FullValue::Function(ASTFunction { function: function.function.clone(), args })
         }
