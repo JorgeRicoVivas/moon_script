@@ -1,14 +1,9 @@
-use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
+use alloc::fmt::{Debug, Formatter};
+use alloc::rc::Rc;
+use alloc::string::{String, ToString};
 use paste::paste;
 
-use crate::block_parsing::value_parsing::ReducedValue;
-
-fn extract_function<Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
-(function: AbstractFunction) -> VBFunction {
-    function.abstract_function()
-}
-
+use crate::parsing::value_parsing::VBValue;
 
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
     fn abstract_function(self) -> VBFunction;
@@ -17,12 +12,17 @@ pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
 
 #[derive(Clone)]
 pub struct VBFunction {
-    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<ReducedValue, String>>) -> Result<ReducedValue, String>>,
+    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<VBValue, String>>) -> Result<VBValue, String>>,
     number_of_params: usize,
 }
 
-impl Debug for VBFunction{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+pub enum VBFunctionExecutingError {
+    MissingValue,
+    CouldNotParse,
+}
+
+impl Debug for VBFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("VBFunction")
             .field("function", &"..")
             .field("number_of_parameters", &self.number_of_params)
@@ -31,11 +31,13 @@ impl Debug for VBFunction{
 }
 
 impl VBFunction {
-    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<ReducedValue, String> where ValuesIter: Iterator<Item=Result<ReducedValue, String>> {
+    #[inline]
+    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<VBValue, String> where ValuesIter: Iterator<Item=Result<VBValue, String>> {
         (self.function)(&mut values)
     }
 
-    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<ReducedValue, String> where ValuesIter: IntoIterator<Item=Result<ReducedValue, String>> {
+    #[inline]
+    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<VBValue, String> where ValuesIter: IntoIterator<Item=Result<VBValue, String>> {
         (self.function)(&mut values.into_iter())
     }
 }
@@ -45,8 +47,8 @@ macro_rules! impl_to_wrapped_function {
         paste!{
             impl<$($param_names, [<Error $param_names>], )* TReturn, TFunction, TError: ToString,>
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u8> for TFunction
-                where $($param_names: TryFrom<ReducedValue, Error=[<Error $param_names>] > + 'static,)*
-                      TReturn: Into<ReducedValue> + 'static,
+                where $($param_names: TryFrom<VBValue, Error=[<Error $param_names>] > + 'static,)*
+                      TReturn: Into<VBValue> + 'static,
                       TFunction: Fn($($param_names),*) -> Result<TReturn,TError> + 'static
             {
                 #[allow(unused_mut)]
@@ -55,7 +57,7 @@ macro_rules! impl_to_wrapped_function {
                     VBFunction {
                         function: Rc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
-                                .ok_or_else(|| "A value is missing")?.clone()?)
+                                .ok_or_else(|| "A value is missing")??)
                                 .map_err(|_| "Couldn't parse a value")?;)*
 
                             self($( paste::item!{[<$param_names:lower>]}  ),*)
@@ -69,8 +71,8 @@ macro_rules! impl_to_wrapped_function {
 
             impl<$($param_names, [<Error $param_names>], )* TReturn, TFunction>
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u16> for TFunction
-                where $($param_names: TryFrom<ReducedValue, Error=[<Error $param_names>]> + 'static,)*
-                      TReturn: Into<ReducedValue> + 'static,
+                where $($param_names: TryFrom<VBValue, Error=[<Error $param_names>]> + 'static,)*
+                      TReturn: Into<VBValue> + 'static,
                       TFunction: Fn($($param_names),*) -> TReturn + 'static
             {
                 #[allow(unused_mut)]
@@ -79,7 +81,7 @@ macro_rules! impl_to_wrapped_function {
                     VBFunction {
                         function: Rc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
-                                .ok_or_else(|| "A value is missing")?.clone()?)
+                                .ok_or_else(|| "A value is missing")??)
                                 .map_err(|_| "Couldn't parse a value")?;)*
 
                             Ok(self($( paste::item!{[<$param_names:lower>]}  ),*).into())
@@ -107,6 +109,10 @@ impl_to_wrapped_function! {
     def { n: 06 names: PA PB PC PD PE PF }
     def { n: 07 names: PA PB PC PD PE PF PG }
     def { n: 08 names: PA PB PC PD PE PF PG PH }
+}
+
+#[cfg(feature = "medium_functions")]
+impl_to_wrapped_function! {
     def { n: 09 names: PA PB PC PD PE PF PG PH PI }
     def { n: 10 names: PA PB PC PD PE PF PG PH PI PJ }
     def { n: 11 names: PA PB PC PD PE PF PG PH PI PJ PK }
@@ -115,6 +121,10 @@ impl_to_wrapped_function! {
     def { n: 14 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN }
     def { n: 15 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO }
     def { n: 16 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP }
+}
+
+#[cfg(feature = "big_functions")]
+impl_to_wrapped_function! {
     def { n: 17 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ }
     def { n: 18 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR }
     def { n: 19 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS }
@@ -123,6 +133,10 @@ impl_to_wrapped_function! {
     def { n: 22 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT }
     def { n: 23 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT PW }
     def { n: 24 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT PW PX }
+}
+
+#[cfg(feature = "massive_functions")]
+impl_to_wrapped_function! {
     def { n: 25 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT PW PX PZ }
     def { n: 26 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT PW PX PZ PY }
     def { n: 27 names: PA PB PC PD PE PF PG PH PI PJ PK PL PM PN PO PP PQ PR PS PU PV PT PW PX PZ PY PAA }

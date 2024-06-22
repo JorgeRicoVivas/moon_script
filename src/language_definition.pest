@@ -49,7 +49,11 @@ VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boo
 PREDICATE = { VALUE }
 
 ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ (property|ident) ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
-IF_BLOCK = { "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}" ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")? }
+IF_BLOCK = {
+    "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"
+    ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")*
+    ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")?
+    }
 WHILE_BLOCK = { "while" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
 RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
 

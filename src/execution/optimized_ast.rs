@@ -1,23 +1,23 @@
-use std::mem;
-use std::ops::Range;
-use arrayvec::ArrayVec;
+use alloc::collections::VecDeque;
 
-use rustc_hash::FxHashMap;
-use smallvec::SmallVec;
-
-use crate::block_parsing::AST;
-use crate::block_parsing::value_parsing::{FullValue, ReducedValue};
-use crate::execution::Block;
+use core::ops::Range;
+use core::mem;
+use alloc::fmt::Debug;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
+use crate::execution::ast::AST;
+use crate::execution::ast::Statement;
 use crate::function::VBFunction;
-use crate::FUNCTION_ELEMENTS_LEN;
+use crate::HashMap;
+use crate::parsing::value_parsing::{FullValue, VBValue};
 
 const OPTIMIZED_AST_CONTENT_TYPE_BLOCK: u8 = 0;
 const OPTIMIZED_AST_CONTENT_TYPE_VALUE: u8 = 1;
-const OPTIMIZED_AST_CONTENT_TYPE_FUNCTION: u8 = 2;
 
 #[derive(Clone, Debug)]
-struct Direction<const CONTENT_TYPE: u8> {
-    dir: usize,
+pub(crate) struct Direction<const CONTENT_TYPE: u8> {
+    pub(crate) dir: usize,
 }
 
 impl<const CONTENT_TYPE: u8> From<MultiDirection<CONTENT_TYPE>> for Direction<CONTENT_TYPE> {
@@ -39,15 +39,17 @@ impl<const CONTENT_TYPE: u8> MultiDirection<CONTENT_TYPE> {
 }
 
 #[derive(Clone, Debug)]
-pub enum OptimizedBlock {
+enum OptimizedBlock {
     WhileBlock {
         condition: Direction<OPTIMIZED_AST_CONTENT_TYPE_VALUE>,
         statements: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
     },
-    IfElseBlock {
+    IfElseBlocks {
+        blocks: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
+    },
+    IfBlock {
         condition: Direction<OPTIMIZED_AST_CONTENT_TYPE_VALUE>,
-        positive_case_statements: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
-        negative_case_statements: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
+        statements: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
     },
     OptimizedAssignament {
         var_index: usize,
@@ -65,13 +67,12 @@ struct OptimizedASTFunction {
 
 #[derive(Debug, Clone)]
 enum OptimizedVariable {
-    Value(ReducedValue),
-    OtherVariable(usize),
+    Value(VBValue),
     ASTValue(Direction<OPTIMIZED_AST_CONTENT_TYPE_VALUE>),
 }
 
 #[derive(Debug, Clone)]
-pub enum OptimizedFullValue {
+enum OptimizedFullValue {
     Null,
     Boolean(bool),
     Integer(i128),
@@ -90,13 +91,12 @@ struct OptimizedRuntimeVariable {
 #[derive(Debug, Clone)]
 pub struct OptimizedAST {
     variables: Vec<OptimizedRuntimeVariable>,
-    parameterized_variables: FxHashMap<String, usize>,
+    parameterized_variables: HashMap<String, usize>,
 
     statements: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK>,
     blocks: Vec<OptimizedBlock>,
     values: Vec<OptimizedFullValue>,
 }
-
 
 
 impl From<AST> for OptimizedAST {
@@ -118,31 +118,35 @@ impl From<AST> for OptimizedAST {
 }
 
 impl OptimizedAST {
-    fn optimize_blocks(&mut self, blocks: Vec<Block>) -> MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK> {
+    fn optimize_blocks(&mut self, blocks: Vec<Statement>) -> MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_BLOCK> {
         let blocks = blocks.into_iter().map(|block| {
             match block {
-                Block::WhileBlock { condition, statements } =>
+                Statement::WhileBlock { condition, statements } =>
                     OptimizedBlock::WhileBlock {
                         condition: self.optimize_values(vec![condition]).into(),
                         statements: self.optimize_blocks(statements),
                     },
-                Block::IfElseBlock { condition, positive_case_statements, negative_case_statements } =>
-                    OptimizedBlock::IfElseBlock {
-                        condition: self.optimize_values(vec![condition]).into(),
-                        positive_case_statements: self.optimize_blocks(positive_case_statements),
-                        negative_case_statements: self.optimize_blocks(negative_case_statements),
-                    },
-                Block::OptimizedAssignament { var_index, value } =>
+                Statement::IfElseBlock { conditional_statements: conditional_blocks } => {
+                    let if_blocks = conditional_blocks.into_iter().map(|block| OptimizedBlock::IfBlock {
+                        condition: self.optimize_values(vec![block.condition]).into(),
+                        statements: self.optimize_blocks(block.statements),
+                    }).collect::<Vec<_>>();
+                    let values_len = if_blocks.len();
+                    let start = self.blocks.len();
+                    self.blocks.extend(if_blocks.into_iter());
+                    OptimizedBlock::IfElseBlocks { blocks: MultiDirection { start, len: values_len } }
+                }
+                Statement::OptimizedAssignament { var_index, value } =>
                     OptimizedBlock::OptimizedAssignament { var_index, value: self.optimize_values(vec![value]).into() },
-                Block::FnCall(function) => {
+                Statement::FnCall(function) => {
                     OptimizedBlock::FnCall(OptimizedASTFunction {
                         function: function.function,
                         args: self.optimize_values(function.args),
                     })
                 }
-                Block::ReturnCall(value) =>
+                Statement::ReturnCall(value) =>
                     OptimizedBlock::ReturnCall(self.optimize_values(vec![value]).into()),
-                Block::UnoptimizedAssignament { .. } => { unreachable!() }
+                Statement::UnoptimizedAssignament { .. } => { unreachable!() }
             }
         }).collect::<Vec<_>>();
         let values_len = blocks.len();
@@ -181,8 +185,8 @@ impl OptimizedAST {
 }
 
 
-pub struct OptimizedExecutingContext {
-    pub(crate) variables: Vec<OptimizedRuntimeVariable>,
+struct OptimizedExecutingContext {
+    variables: Vec<OptimizedRuntimeVariable>,
 }
 
 pub struct OptimizedASTExecutor<'ast> {
@@ -195,25 +199,65 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         Self { ast, context: OptimizedExecutingContext { variables: ast.variables.clone() } }
     }
 
-    pub fn push_variable<Variable: Into<ReducedValue>>(mut self, name: &str, variable: Variable) -> Self {
+    pub fn push_variable<Variable: Into<VBValue>>(mut self, name: &str, variable: Variable) -> Self {
         if let Some(variable_index) = self.ast.parameterized_variables.get(name) {
             self.context.variables[*variable_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(variable.into().into()) };
         }
         self
     }
 
-    pub fn execute(mut self) -> Result<ReducedValue, String> {
+    pub fn execute(mut self) -> Result<VBValue, String> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&self.ast.blocks[block], &self.ast)? {
                 return Ok(res);
             }
         }
-        Ok(ReducedValue::Null)
+        Ok(VBValue::Null)
+    }
+
+    pub fn execute_stack(mut self) -> Result<VBValue, String> {
+        let mut stacked_execution_blocks = VecDeque::with_capacity(25);
+        self.ast.statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
+        while let Some(block_dir) = stacked_execution_blocks.pop_front() {
+            match &self.ast.blocks[block_dir] {
+                OptimizedBlock::WhileBlock { condition, statements } => {
+                    if self.context.resolve_value(condition.dir, &self.ast)?.try_into().map_err(|_| "Couldn't solve a while loop's condition".to_string())? {
+                        stacked_execution_blocks.push_front(block_dir);
+                        statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
+                    }
+                }
+                OptimizedBlock::IfElseBlocks { blocks } => {
+                    for if_block_dir in blocks.iter() {
+                        match &self.ast.blocks[if_block_dir] {
+                            OptimizedBlock::IfBlock { condition, statements } => {
+                                if self.context.resolve_value(condition.dir, &self.ast)?.try_into().map_err(|_| "Couldn't solve on an if's condition".to_string())? {
+                                    statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
+                                    break;
+                                }
+                            }
+                            _ => { unreachable!("IfElseBlocks should contain just IfBlocks, yet, something else was found") }
+                        }
+                    }
+                }
+                OptimizedBlock::IfBlock { .. } => { unreachable!("IfBlocks should not used directly, but IfElseBlocks instead") }
+                OptimizedBlock::OptimizedAssignament { var_index, value } => {
+                    self.context.variables[*var_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(self.context.resolve_value(value.dir, &self.ast)?) }
+                }
+                OptimizedBlock::FnCall(function) => {
+                    function.function.execute_iter(function.args.iter().map(|value_dir| self.context.resolve_value(value_dir, &self.ast)))?;
+                }
+                OptimizedBlock::ReturnCall(value) => {
+                    let value = self.context.resolve_value(value.dir, &self.ast)?;
+                    return Ok(value);
+                }
+            }
+        }
+        Ok(VBValue::Null)
     }
 }
 
 impl OptimizedExecutingContext {
-    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<(Option<ReducedValue>), String> {
+    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<Option<VBValue>, String> {
         match block {
             OptimizedBlock::WhileBlock { condition, statements } => {
                 while self.resolve_value(condition.dir, ast)?.try_into().map_err(|_| "Couldn't solve a while loop's condition".to_string())? {
@@ -224,47 +268,50 @@ impl OptimizedExecutingContext {
                     }
                 }
             }
-            OptimizedBlock::IfElseBlock { condition, positive_case_statements, negative_case_statements } => {
-                if self.resolve_value(condition.dir, ast)?.try_into().map_err(|_| "Couldn't solve an if block's condition")? {
-                    for statement in positive_case_statements.iter().map(|block_index| &ast.blocks[block_index]) {
-                        if let Some(res) = self.execute_block(statement, ast)? {
-                            return Ok(Some(res));
+            OptimizedBlock::IfBlock { .. } => { unreachable!("IfBlocks should not used directly, but IfElseBlocks instead") }
+            OptimizedBlock::IfElseBlocks { blocks } => {
+                for if_block_dir in blocks.iter() {
+                    match &ast.blocks[if_block_dir] {
+                        OptimizedBlock::IfBlock { condition, statements } => {
+                            if self.resolve_value(condition.dir, ast)?.try_into().map_err(|_| "Couldn't solve on an if's condition".to_string())? {
+                                for statement in statements.iter().map(|block_index| &ast.blocks[block_index]) {
+                                    if let Some(res) = self.execute_block(statement, ast)? {
+                                        return Ok(Some(res));
+                                    }
+                                }
+                                return Ok(None);
+                            }
                         }
-                    }
-                } else {
-                    for statement in negative_case_statements.iter().map(|block_index| &ast.blocks[block_index]) {
-                        if let Some(res) = self.execute_block(statement, ast)? {
-                            return Ok(Some(res));
-                        }
+                        _ => { unreachable!("IfElseBlocks should contain just IfBlocks, yet, something else was found") }
                     }
                 }
             }
             OptimizedBlock::OptimizedAssignament { var_index, value } =>
                 self.variables[*var_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(self.resolve_value(value.dir, ast)?) },
             OptimizedBlock::FnCall(function) => {
-                (function.function).execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?;
+                function.function.execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?;
             }
             OptimizedBlock::ReturnCall(value) => {
                 let value = self.resolve_value(value.dir, ast)?;
                 return Ok(Some(value));
-            },
+            }
         }
         Ok(None)
     }
 
-    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<ReducedValue, String> {
+    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<VBValue, String> {
         Ok(match &ast.values[value_dir] {
-            OptimizedFullValue::Null => ReducedValue::Null,
-            OptimizedFullValue::Boolean(v) => ReducedValue::Boolean(v.clone()),
-            OptimizedFullValue::Integer(v) => ReducedValue::Integer(v.clone()),
-            OptimizedFullValue::Decimal(v) => ReducedValue::Decimal(v.clone()),
-            OptimizedFullValue::String(v) => ReducedValue::String(v.clone()),
+            OptimizedFullValue::Null => VBValue::Null,
+            OptimizedFullValue::Boolean(v) => VBValue::Boolean(v.clone()),
+            OptimizedFullValue::Integer(v) => VBValue::Integer(v.clone()),
+            OptimizedFullValue::Decimal(v) => VBValue::Decimal(v.clone()),
+            OptimizedFullValue::String(v) => VBValue::String(v.clone()),
             OptimizedFullValue::Array(v) => {
                 let mut res = Vec::with_capacity(v.len);
                 for value in v.iter().map(|value_dir| self.resolve_value(value_dir, ast)) {
                     res.push(value?)
                 }
-                ReducedValue::Array(res)
+                VBValue::Array(res)
             }
             OptimizedFullValue::Function(function) => {
                 function.function.execute_iter(function.args.iter().map(|value_dir| self.resolve_value(value_dir, ast)))?
@@ -275,14 +322,13 @@ impl OptimizedExecutingContext {
         })
     }
 
-    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<ReducedValue, String> {
+    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<VBValue, String> {
         let mut should_inline = true;
         let value = match &self.variables[variable_index].value {
             OptimizedVariable::Value(value) => {
                 should_inline = false;
                 value.clone()
             }
-            OptimizedVariable::OtherVariable(other_var_index) => { self.resolve_variable(ast, *other_var_index)? }
             OptimizedVariable::ASTValue(value_dir) => { self.resolve_value(value_dir.dir, ast)? }
         };
         if should_inline {
