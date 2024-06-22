@@ -4,6 +4,8 @@ use alloc::string::String;
 
 #[cfg(feature = "colorization")]
 use colored::Colorize;
+use pest::error::LineColLocation;
+use pest::Position;
 use simple_detailed_error::{SimpleError, SimpleErrorDetail, SimpleErrorExplanation};
 #[cfg(feature = "colorization")]
 use string_colorization::{foreground, style};
@@ -22,6 +24,27 @@ impl<'input> Display for ParsingError<'input> {
         match self {
             ParsingError::Parsing(pest_error) => f.write_str(&format!("{pest_error}")),
             ParsingError::CouldntBuildAST(simple_error) => f.write_str(&format!("{}", simple_error.as_display_struct(true))),
+        }
+    }
+}
+
+impl<'input> From<ParsingError<'input>> for SimpleError<'input>{
+    fn from(value: ParsingError<'input>) -> Self {
+        match value{
+            ParsingError::Parsing(parsing) => {
+                let mut error = SimpleError::new()
+                    .error_detail(format!("On {} because of {}", parsing.line(), parsing.variant));
+                match parsing.line_col{
+                    LineColLocation::Pos((start_line,start_col)) => {
+                        error=error.start_point_of_error(start_line,start_col);
+                    }
+                    LineColLocation::Span((start_line,start_col), (end_line,end_col)) => {
+                        error=error.start_point_of_error(start_line,start_col).end_point_of_error(end_line,end_col);
+                    }
+                }
+                error
+            }
+            ParsingError::CouldntBuildAST(error) => error,
         }
     }
 }
