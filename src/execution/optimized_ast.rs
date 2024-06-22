@@ -1,17 +1,17 @@
 use alloc::collections::VecDeque;
-
-use core::ops::Range;
-use core::mem;
 use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
+use core::mem;
+use core::ops::Range;
+
 use crate::execution::ast::AST;
 use crate::execution::ast::Statement;
 use crate::execution::RuntimeError;
 use crate::function::VBFunction;
 use crate::HashMap;
-use crate::parsing::value_parsing::{FullValue, VBValue};
+use crate::value::{FullValue, VBValue};
 
 const OPTIMIZED_AST_CONTENT_TYPE_BLOCK: u8 = 0;
 const OPTIMIZED_AST_CONTENT_TYPE_VALUE: u8 = 1;
@@ -223,7 +223,7 @@ impl<'ast> OptimizedASTExecutor<'ast> {
             match &self.ast.blocks[block_dir] {
                 OptimizedBlock::WhileBlock { condition, statements } => {
                     if self.context.resolve_value(condition.dir, &self.ast)?.try_into()
-                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "while", function_error_message: "".to_string() })?{
+                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "while", function_error_message: "".to_string() })? {
                         stacked_execution_blocks.push_front(block_dir);
                         statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
                     }
@@ -264,7 +264,7 @@ impl OptimizedExecutingContext {
         match block {
             OptimizedBlock::WhileBlock { condition, statements } => {
                 while self.resolve_value(condition.dir, ast)?.try_into()
-                    .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })?{
+                    .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })? {
                     for statement in statements.iter().map(|block_index| &ast.blocks[block_index]) {
                         if let Some(res) = self.execute_block(statement, ast)? {
                             return Ok(Some(res));
@@ -278,7 +278,7 @@ impl OptimizedExecutingContext {
                     match &ast.blocks[if_block_dir] {
                         OptimizedBlock::IfBlock { condition, statements } => {
                             if self.resolve_value(condition.dir, ast)?.try_into()
-                                .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })?{
+                                .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })? {
                                 for statement in statements.iter().map(|block_index| &ast.blocks[block_index]) {
                                     if let Some(res) = self.execute_block(statement, ast)? {
                                         return Ok(Some(res));

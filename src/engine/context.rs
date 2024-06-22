@@ -1,15 +1,15 @@
-use core::mem;
 use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
+use core::mem;
 
 use pest::Parser;
 
 use crate::execution::ASTFunction;
 use crate::function::ToAbstractFunction;
 use crate::parsing::{Rule, SimpleParser};
-use crate::parsing::value_parsing::{FullValue, VBValue};
+use crate::value::{FullValue, VBValue};
 
 #[derive(Debug, Clone)]
 pub struct ContextBuilder {

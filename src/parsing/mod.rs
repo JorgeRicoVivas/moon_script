@@ -1,7 +1,7 @@
-use core::mem;
 use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::mem;
 
 use pest::iterators::Pair;
 use pest_derive::Parser;
@@ -9,13 +9,13 @@ use simple_detailed_error::SimpleError;
 
 use statement_parsing::WalkInput;
 
-use crate::engine::Engine;
 use crate::engine::context::ContextBuilder;
+use crate::engine::Engine;
 use crate::execution::ast::{AST, Statement};
 use crate::execution::RuntimeVariable;
 use crate::function::{ToAbstractFunction, VBFunction};
 use crate::HashMap;
-use crate::parsing::value_parsing::FullValue;
+use crate::value::FullValue;
 
 pub(crate) mod value_parsing;
 pub(crate) mod statement_parsing;

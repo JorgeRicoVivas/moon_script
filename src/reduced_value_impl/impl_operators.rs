@@ -1,7 +1,8 @@
 use alloc::{format, vec};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use crate::parsing::value_parsing::VBValue;
+
+use crate::value::VBValue;
 
 const ARITHMETIC_RESULT_BOOL: u8 = 0;
 const ARITHMETIC_RESULT_INT: u8 = 1;

@@ -6,7 +6,7 @@ use core::mem;
 use crate::execution::{ASTFunction, ConditionalStatements, RuntimeError, RuntimeVariable};
 use crate::execution::optimized_ast::OptimizedAST;
 use crate::HashMap;
-use crate::parsing::value_parsing::{FullValue, VBValue};
+use crate::value::{FullValue, VBValue};
 
 #[derive(Debug, Clone, Default)]
 pub struct AST {

@@ -1,15 +1,15 @@
 use alloc::fmt::Debug;
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::string::ToString;
 use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 
 use simple_detailed_error::{SimpleErrorDetail, SimpleErrorExplanation};
 
 use ast::Statement;
 
 use crate::function::VBFunction;
-use crate::parsing::value_parsing::FullValue;
+use crate::value::FullValue;
 
 pub mod optimized_ast;
 pub mod ast;

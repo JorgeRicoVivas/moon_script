@@ -1,16 +1,17 @@
 use alloc::string::{String, ToString};
+
 use pest::Parser;
 use pest::pratt_parser::{Assoc, Op, PrattParser};
 use simple_detailed_error::SimpleErrorDetail;
 
 use context::ContextBuilder;
 
-use crate::execution::ast::AST;
 use crate::{HashMap, parsing};
+use crate::execution::ast::AST;
 use crate::parsing::{FunctionDefinition, FunctionInfo, Rule, SimpleParser};
 use crate::parsing::error::ParsingError;
-use crate::parsing::value_parsing::VBValue;
 use crate::reduced_value_impl::impl_operators;
+use crate::value::VBValue;
 
 pub mod context;
 
@@ -64,7 +65,7 @@ impl Default for Engine {
             constants: Default::default(),
         };
         #[cfg(feature = "std")]
-        let mut res = res;
+            let mut res = res;
         #[cfg(feature = "std")]
         res.add_function(FunctionDefinition::new("print", |value: String| {
             println!("{value}");

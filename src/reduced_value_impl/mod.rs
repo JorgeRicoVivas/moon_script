@@ -2,7 +2,8 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
-use crate::parsing::value_parsing::{FullValue, VBValue};
+
+use crate::value::{FullValue, VBValue};
 
 pub(crate) mod impl_operators;
 

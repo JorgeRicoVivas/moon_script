@@ -5,7 +5,7 @@ use alloc::string::ToString;
 use paste::paste;
 
 use crate::execution::RuntimeError;
-use crate::parsing::value_parsing::VBValue;
+use crate::value::VBValue;
 
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
     fn abstract_function(self) -> VBFunction;

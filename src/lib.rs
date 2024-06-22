@@ -4,10 +4,10 @@ extern crate alloc;
 extern crate pest;
 
 #[cfg(feature = "std")]
-type HashMap<K,V> = std::collections::HashMap<K,V>;
+type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 #[cfg(not(feature = "std"))]
-type HashMap<K,V> = alloc::collections::BTreeMap<K,V>;
+type HashMap<K, V> = alloc::collections::BTreeMap<K, V>;
 
 pub mod engine;
 pub(crate) mod external_utils;
@@ -15,7 +15,7 @@ pub mod execution;
 mod reduced_value_impl;
 pub mod parsing;
 pub mod function;
-
+pub mod value;
 
 
 /*

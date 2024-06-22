@@ -1,13 +1,14 @@
 use alloc::fmt::{Debug, Display, Formatter};
-use alloc::string::String;
 use alloc::format;
+use alloc::string::String;
+
 #[cfg(feature = "colorization")]
 use colored::Colorize;
 use simple_detailed_error::{SimpleError, SimpleErrorDetail, SimpleErrorExplanation};
 #[cfg(feature = "colorization")]
 use string_colorization::{foreground, style};
-use crate::execution::RuntimeError;
 
+use crate::execution::RuntimeError;
 use crate::parsing::Rule;
 
 #[derive(Debug)]
@@ -44,21 +45,21 @@ pub enum ASTBuildingError<'input> {
 }
 
 #[cfg(not(feature = "colorization"))]
-trait PseudoColored{
-    fn green(&self)->&Self{self}
-    fn bold(&self)->&Self{self}
-    fn italic(&self)->&Self{self}
+trait PseudoColored {
+    fn green(&self) -> &Self { self }
+    fn bold(&self) -> &Self { self }
+    fn italic(&self) -> &Self { self }
 }
 
 #[cfg(not(feature = "colorization"))]
-impl PseudoColored for str{}
+impl PseudoColored for str {}
 
 impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
     fn explain_error(&self) -> SimpleErrorExplanation {
         let explanation;
         let mut solution = String::new();
         #[cfg(feature = "colorization")]
-        let mut colorization_markers: Vec<(&str, string_colorization::Colorizer)> = Vec::new();
+            let mut colorization_markers: Vec<(&str, string_colorization::Colorizer)> = Vec::new();
         match self {
             ASTBuildingError::VariableNotInScope { variable_name } => {
                 explanation = format!("The variable {} does not exist.", variable_name.bold());

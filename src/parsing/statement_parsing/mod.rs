@@ -1,19 +1,19 @@
-use pest::iterators::Pair;
-use simple_detailed_error::SimpleError;
-
-
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::engine::Engine;
+use pest::iterators::Pair;
+use simple_detailed_error::SimpleError;
+
 use crate::engine::context::{CompiletimeVariableInformation, ContextBuilder};
+use crate::engine::Engine;
 use crate::execution::ast::Statement;
 use crate::execution::ConditionalStatements;
 use crate::external_utils::on_error_iter::IterOnError;
 use crate::parsing;
 use crate::parsing::{AddSourceOfError, Rule, value_parsing};
-use crate::parsing::value_parsing::{build_value_token, FullValue, VBValue};
+use crate::parsing::value_parsing::build_value_token;
+use crate::value::{FullValue, VBValue};
 
 pub enum WalkInput<'selflf> {
     Statement(&'selflf mut Statement),
