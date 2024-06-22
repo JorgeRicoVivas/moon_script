@@ -11,7 +11,7 @@ use crate::execution::ast::Statement;
 use crate::execution::RuntimeError;
 use crate::function::VBFunction;
 use crate::HashMap;
-use crate::value::{FullValue, VBValue};
+use crate::value::{FullValue, MoonValue};
 
 const OPTIMIZED_AST_CONTENT_TYPE_BLOCK: u8 = 0;
 const OPTIMIZED_AST_CONTENT_TYPE_VALUE: u8 = 1;
@@ -68,7 +68,7 @@ struct OptimizedASTFunction {
 
 #[derive(Debug, Clone)]
 enum OptimizedVariable {
-    Value(VBValue),
+    Value(MoonValue),
     ASTValue(Direction<OPTIMIZED_AST_CONTENT_TYPE_VALUE>),
 }
 
@@ -200,23 +200,23 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         Self { ast, context: OptimizedExecutingContext { variables: ast.variables.clone() } }
     }
 
-    pub fn push_variable<Variable: Into<VBValue>>(mut self, name: &str, variable: Variable) -> Self {
+    pub fn push_variable<Variable: Into<MoonValue>>(mut self, name: &str, variable: Variable) -> Self {
         if let Some(variable_index) = self.ast.parameterized_variables.get(name) {
             self.context.variables[*variable_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(variable.into().into()) };
         }
         self
     }
 
-    pub fn execute(mut self) -> Result<VBValue, RuntimeError> {
+    pub fn execute(mut self) -> Result<MoonValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&self.ast.blocks[block], &self.ast)? {
                 return Ok(res);
             }
         }
-        Ok(VBValue::Null)
+        Ok(MoonValue::Null)
     }
 
-    pub fn execute_stack(mut self) -> Result<VBValue, RuntimeError> {
+    pub fn execute_stack(mut self) -> Result<MoonValue, RuntimeError> {
         let mut stacked_execution_blocks = VecDeque::with_capacity(25);
         self.ast.statements.iter().rev().for_each(|dir| stacked_execution_blocks.push_front(dir));
         while let Some(block_dir) = stacked_execution_blocks.pop_front() {
@@ -255,12 +255,12 @@ impl<'ast> OptimizedASTExecutor<'ast> {
                 }
             }
         }
-        Ok(VBValue::Null)
+        Ok(MoonValue::Null)
     }
 }
 
 impl OptimizedExecutingContext {
-    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<Option<VBValue>, RuntimeError> {
+    fn execute_block(&mut self, block: &OptimizedBlock, ast: &OptimizedAST) -> Result<Option<MoonValue>, RuntimeError> {
         match block {
             OptimizedBlock::WhileBlock { condition, statements } => {
                 while self.resolve_value(condition.dir, ast)?.try_into()
@@ -304,19 +304,19 @@ impl OptimizedExecutingContext {
         Ok(None)
     }
 
-    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<VBValue, RuntimeError> {
+    fn resolve_value(&mut self, value_dir: usize, ast: &OptimizedAST) -> Result<MoonValue, RuntimeError> {
         Ok(match &ast.values[value_dir] {
-            OptimizedFullValue::Null => VBValue::Null,
-            OptimizedFullValue::Boolean(v) => VBValue::Boolean(v.clone()),
-            OptimizedFullValue::Integer(v) => VBValue::Integer(v.clone()),
-            OptimizedFullValue::Decimal(v) => VBValue::Decimal(v.clone()),
-            OptimizedFullValue::String(v) => VBValue::String(v.clone()),
+            OptimizedFullValue::Null => MoonValue::Null,
+            OptimizedFullValue::Boolean(v) => MoonValue::Boolean(v.clone()),
+            OptimizedFullValue::Integer(v) => MoonValue::Integer(v.clone()),
+            OptimizedFullValue::Decimal(v) => MoonValue::Decimal(v.clone()),
+            OptimizedFullValue::String(v) => MoonValue::String(v.clone()),
             OptimizedFullValue::Array(v) => {
                 let mut res = Vec::with_capacity(v.len);
                 for value in v.iter().map(|value_dir| self.resolve_value(value_dir, ast)) {
                     res.push(value?)
                 }
-                VBValue::Array(res)
+                MoonValue::Array(res)
             }
             OptimizedFullValue::Function(function) => {
                 function.function.execute_iter(function.args.iter()
@@ -328,7 +328,7 @@ impl OptimizedExecutingContext {
         })
     }
 
-    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<VBValue, RuntimeError> {
+    fn resolve_variable(&mut self, ast: &OptimizedAST, variable_index: usize) -> Result<MoonValue, RuntimeError> {
         let mut should_inline = true;
         let value = match &self.variables[variable_index].value {
             OptimizedVariable::Value(value) => {

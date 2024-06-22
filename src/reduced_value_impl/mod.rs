@@ -3,19 +3,19 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
 
-use crate::value::{FullValue, VBValue};
+use crate::value::{FullValue, MoonValue};
 
 pub(crate) mod impl_operators;
 
-impl From<VBValue> for FullValue {
-    fn from(value: VBValue) -> Self {
+impl From<MoonValue> for FullValue {
+    fn from(value: MoonValue) -> Self {
         match value {
-            VBValue::Null => FullValue::Null,
-            VBValue::Boolean(boolean) => FullValue::Boolean(boolean),
-            VBValue::Decimal(decimal) => FullValue::Decimal(decimal),
-            VBValue::Integer(integer) => FullValue::Integer(integer),
-            VBValue::String(string) => FullValue::String(string),
-            VBValue::Array(array) => FullValue::Array(
+            MoonValue::Null => FullValue::Null,
+            MoonValue::Boolean(boolean) => FullValue::Boolean(boolean),
+            MoonValue::Decimal(decimal) => FullValue::Decimal(decimal),
+            MoonValue::Integer(integer) => FullValue::Integer(integer),
+            MoonValue::String(string) => FullValue::String(string),
+            MoonValue::Array(array) => FullValue::Array(
                 array.into_iter()
                     .map(|reduced_value| Self::from(reduced_value))
                     .collect()
@@ -25,26 +25,26 @@ impl From<VBValue> for FullValue {
 }
 
 
-impl TryFrom<VBValue> for () {
+impl TryFrom<MoonValue> for () {
     type Error = ();
 
-    fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
         match value {
-            VBValue::Null => Ok(()),
+            MoonValue::Null => Ok(()),
             _ => Err(())
         }
     }
 }
 
-impl TryFrom<VBValue> for bool {
+impl TryFrom<MoonValue> for bool {
     type Error = ();
 
-    fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
         Ok(match value {
-            VBValue::Boolean(bool) => bool,
-            VBValue::Integer(int) => int >= 1,
-            VBValue::Decimal(decimal) => decimal >= 1.0,
-            VBValue::String(string) => {
+            MoonValue::Boolean(bool) => bool,
+            MoonValue::Integer(int) => int >= 1,
+            MoonValue::Decimal(decimal) => decimal >= 1.0,
+            MoonValue::String(string) => {
                 if string.eq("true") || string.eq("no") {
                     true
                 } else if string.eq("false") || string.eq("no") {
@@ -60,24 +60,24 @@ impl TryFrom<VBValue> for bool {
     }
 }
 
-impl TryFrom<VBValue> for String {
+impl TryFrom<MoonValue> for String {
     type Error = ();
 
-    fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
         match value {
-            VBValue::String(string) => Ok(string),
+            MoonValue::String(string) => Ok(string),
             _ => Err(())
         }
     }
 }
 
-impl<T: TryFrom<VBValue>> TryFrom<VBValue> for Vec<T> where T::Error: Default {
+impl<T: TryFrom<MoonValue>> TryFrom<MoonValue> for Vec<T> where T::Error: Default {
     type Error = T::Error;
 
-    fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
         Ok(match value {
-            VBValue::Null => Vec::new(),
-            VBValue::Array(values) => {
+            MoonValue::Null => Vec::new(),
+            MoonValue::Array(values) => {
                 let mut res = Vec::with_capacity(values.len());
                 for value in values.into_iter() {
                     res.push(T::try_from(value)?);
@@ -89,12 +89,12 @@ impl<T: TryFrom<VBValue>> TryFrom<VBValue> for Vec<T> where T::Error: Default {
     }
 }
 
-impl TryFrom<VBValue> for vec::IntoIter<VBValue> {
+impl TryFrom<MoonValue> for vec::IntoIter<MoonValue> {
     type Error = ();
 
-    fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
         Ok(match value {
-            VBValue::Array(values) => values.into_iter(),
+            MoonValue::Array(values) => values.into_iter(),
             _ => return Err(()),
         })
     }
@@ -107,16 +107,16 @@ impl TryFrom<VBValue> for vec::IntoIter<VBValue> {
 macro_rules! impl_try_from_for_reduced_value {
     ($($type:ty),+) => {
         $(
-            impl TryFrom<VBValue> for $type{
+            impl TryFrom<MoonValue> for $type{
                 type Error = ();
 
-                fn try_from(value: VBValue) -> Result<Self, Self::Error> {
+                fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
                     Ok(match value {
-                        VBValue::Boolean(bool) => (if bool {1}else{0}) as $type,
-                        VBValue::Integer(int) => int as $type,
-                        VBValue::Decimal(decimal) => decimal as $type,
-                        VBValue::Array(array) => return Self::try_from(array.get(0).ok_or(())?.clone()).map_err(|_|()),
-                        VBValue::String(string)=><$type>::from_str(&string).map_err(|_|())?,
+                        MoonValue::Boolean(bool) => (if bool {1}else{0}) as $type,
+                        MoonValue::Integer(int) => int as $type,
+                        MoonValue::Decimal(decimal) => decimal as $type,
+                        MoonValue::Array(array) => return Self::try_from(array.get(0).ok_or(())?.clone()).map_err(|_|()),
+                        MoonValue::String(string)=><$type>::from_str(&string).map_err(|_|())?,
                         _ => return Err(()),
                     })
                 }
@@ -134,27 +134,27 @@ impl_try_from_for_reduced_value! {
 
 
 
-impl From<()> for VBValue {
+impl From<()> for MoonValue {
     fn from(_value: ()) -> Self {
-        VBValue::Null
+        MoonValue::Null
     }
 }
 
-impl From<bool> for VBValue {
+impl From<bool> for MoonValue {
     fn from(value: bool) -> Self {
-        VBValue::Boolean(value)
+        MoonValue::Boolean(value)
     }
 }
 
-impl From<f32> for VBValue {
+impl From<f32> for MoonValue {
     fn from(value: f32) -> Self {
-        VBValue::Decimal(value as f64)
+        MoonValue::Decimal(value as f64)
     }
 }
 
-impl From<f64> for VBValue {
+impl From<f64> for MoonValue {
     fn from(value: f64) -> Self {
-        VBValue::Decimal(value)
+        MoonValue::Decimal(value)
     }
 }
 
@@ -162,9 +162,9 @@ macro_rules! impl_into_reduced_value {
     ($($type:ty),+) => {
         $(
 
-            impl From<$type> for VBValue {
+            impl From<$type> for MoonValue {
                 fn from(value: $type) -> Self {
-                    VBValue::Integer(value as i128)
+                    MoonValue::Integer(value as i128)
                 }
             }
         )+
@@ -174,36 +174,36 @@ macro_rules! impl_into_reduced_value {
 impl_into_reduced_value! { u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize }
 
 
-impl<T: Into<VBValue>> From<Option<T>> for VBValue {
+impl<T: Into<MoonValue>> From<Option<T>> for MoonValue {
     fn from(value: Option<T>) -> Self {
         match value {
-            None => VBValue::Null,
+            None => MoonValue::Null,
             Some(value) => value.into()
         }
     }
 }
 
-impl<T: Into<VBValue>> From<Vec<T>> for VBValue {
+impl<T: Into<MoonValue>> From<Vec<T>> for MoonValue {
     fn from(value: Vec<T>) -> Self {
-        VBValue::Array(value.into_iter().map(|item| item.into()).collect())
+        MoonValue::Array(value.into_iter().map(|item| item.into()).collect())
     }
 }
 
 
-impl<T: Into<VBValue>, const LEN: usize> From<[T; LEN]> for VBValue {
+impl<T: Into<MoonValue>, const LEN: usize> From<[T; LEN]> for MoonValue {
     fn from(value: [T; LEN]) -> Self {
-        VBValue::Array(Vec::from(value.map(|item| item.into())))
+        MoonValue::Array(Vec::from(value.map(|item| item.into())))
     }
 }
 
-impl From<&str> for VBValue {
+impl From<&str> for MoonValue {
     fn from(value: &str) -> Self {
-        VBValue::String(value.to_string())
+        MoonValue::String(value.to_string())
     }
 }
 
-impl From<String> for VBValue {
+impl From<String> for MoonValue {
     fn from(value: String) -> Self {
-        VBValue::String(value)
+        MoonValue::String(value)
     }
 }

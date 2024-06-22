@@ -13,7 +13,7 @@ use crate::external_utils::on_error_iter::IterOnError;
 use crate::parsing;
 use crate::parsing::{AddSourceOfError, Rule, value_parsing};
 use crate::parsing::value_parsing::build_value_token;
-use crate::value::{FullValue, VBValue};
+use crate::value::{FullValue, MoonValue};
 
 pub enum WalkInput<'selflf> {
     Statement(&'selflf mut Statement),
@@ -86,7 +86,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                     if is_last_else_with_no_predicate {
                         context.push_block_level();
                         parsed_statements.push(ConditionalStatements {
-                            condition: FullValue::from(VBValue::Boolean(true)),
+                            condition: FullValue::from(MoonValue::Boolean(true)),
                             statements: parse_statements(current_token, base, context)?,
                         });
                         context.pop_block_level();

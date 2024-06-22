@@ -9,7 +9,7 @@ use pest::Parser;
 use crate::execution::ASTFunction;
 use crate::function::ToAbstractFunction;
 use crate::parsing::{Rule, SimpleParser};
-use crate::value::{FullValue, VBValue};
+use crate::value::{FullValue, MoonValue};
 
 #[derive(Debug, Clone)]
 pub struct ContextBuilder {
@@ -200,7 +200,7 @@ impl CompiletimeVariableInformation {
         }
     }
 
-    pub fn value<Value: Into<VBValue>>(mut self, value: Value) -> Self {
+    pub fn value<Value: Into<MoonValue>>(mut self, value: Value) -> Self {
         let value = value.into();
         if self.associated_type_name.is_none() {
             self.associated_type_name = Some(value.type_name().to_string());
@@ -209,7 +209,7 @@ impl CompiletimeVariableInformation {
         self
     }
 
-    pub fn lazy_value<Dummy, ReturnT: Into<VBValue>, Function, AbstractFunction: ToAbstractFunction<(), ReturnT, Function, Dummy> + Clone>
+    pub fn lazy_value<Dummy, ReturnT: Into<MoonValue>, Function, AbstractFunction: ToAbstractFunction<(), ReturnT, Function, Dummy> + Clone>
     (mut self, function: AbstractFunction) -> Self {
         self.first_value = FullValue::Function(ASTFunction { function: function.clone().abstract_function(), args: Vec::new() });
         self.current_known_value = Some(FullValue::Function(ASTFunction { function: function.abstract_function(), args: Vec::new() }));

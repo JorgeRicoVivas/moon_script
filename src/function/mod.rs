@@ -5,7 +5,7 @@ use alloc::string::ToString;
 use paste::paste;
 
 use crate::execution::RuntimeError;
-use crate::value::VBValue;
+use crate::value::MoonValue;
 
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
     fn abstract_function(self) -> VBFunction;
@@ -14,7 +14,7 @@ pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
 
 #[derive(Clone)]
 pub struct VBFunction {
-    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<VBValue, RuntimeError>>) -> Result<VBValue, RuntimeError>>,
+    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError>>,
     number_of_params: usize,
 }
 
@@ -34,12 +34,12 @@ impl Debug for VBFunction {
 
 impl VBFunction {
     #[inline]
-    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<VBValue, RuntimeError> where ValuesIter: Iterator<Item=Result<VBValue, RuntimeError>> {
+    pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<MoonValue, RuntimeError> where ValuesIter: Iterator<Item=Result<MoonValue, RuntimeError>> {
         (self.function)(&mut values)
     }
 
     #[inline]
-    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<VBValue, RuntimeError> where ValuesIter: IntoIterator<Item=Result<VBValue, RuntimeError>> {
+    pub(crate) fn execute_into_iter<'values, ValuesIter>(&self, values: ValuesIter) -> Result<MoonValue, RuntimeError> where ValuesIter: IntoIterator<Item=Result<MoonValue, RuntimeError>> {
         (self.function)(&mut values.into_iter())
     }
 }
@@ -49,8 +49,8 @@ macro_rules! impl_to_wrapped_function {
         paste!{
             impl<$($param_names, [<Error $param_names>], )* TReturn, TFunction, TError: ToString,>
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u8> for TFunction
-                where $($param_names: TryFrom<VBValue, Error=[<Error $param_names>] > + 'static,)*
-                      TReturn: Into<VBValue> + 'static,
+                where $($param_names: TryFrom<MoonValue, Error=[<Error $param_names>] > + 'static,)*
+                      TReturn: Into<MoonValue> + 'static,
                       TFunction: Fn($($param_names),*) -> Result<TReturn,TError> + 'static
             {
                 #[allow(unused_mut)]
@@ -73,8 +73,8 @@ macro_rules! impl_to_wrapped_function {
 
             impl<$($param_names, [<Error $param_names>], )* TReturn, TFunction>
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u16> for TFunction
-                where $($param_names: TryFrom<VBValue, Error=[<Error $param_names>]> + 'static,)*
-                      TReturn: Into<VBValue> + 'static,
+                where $($param_names: TryFrom<MoonValue, Error=[<Error $param_names>]> + 'static,)*
+                      TReturn: Into<MoonValue> + 'static,
                       TFunction: Fn($($param_names),*) -> TReturn + 'static
             {
                 #[allow(unused_mut)]

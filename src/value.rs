@@ -7,16 +7,16 @@ use crate::engine::context::ContextBuilder;
 use crate::execution::ASTFunction;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum VBValue {
+pub enum MoonValue {
     Null,
     Boolean(bool),
     Integer(i128),
     Decimal(f64),
     String(String),
-    Array(Vec<VBValue>),
+    Array(Vec<MoonValue>),
 }
 
-impl VBValue {
+impl MoonValue {
     pub(crate) fn type_name(&self) -> &'static str {
         match self {
             Self::Null => "null",
@@ -29,36 +29,36 @@ impl VBValue {
     }
 }
 
-impl TryFrom<FullValue> for VBValue {
+impl TryFrom<FullValue> for MoonValue {
     type Error = ();
     fn try_from(value: FullValue) -> Result<Self, Self::Error> {
         Ok(match value {
-            FullValue::Null => { VBValue::Null }
-            FullValue::Boolean(v) => { VBValue::Boolean(v) }
-            FullValue::Integer(v) => { VBValue::Integer(v) }
-            FullValue::Decimal(v) => { VBValue::Decimal(v) }
-            FullValue::String(v) => { VBValue::String(v) }
+            FullValue::Null => { MoonValue::Null }
+            FullValue::Boolean(v) => { MoonValue::Boolean(v) }
+            FullValue::Integer(v) => { MoonValue::Integer(v) }
+            FullValue::Decimal(v) => { MoonValue::Decimal(v) }
+            FullValue::String(v) => { MoonValue::String(v) }
             FullValue::Array(v) => {
                 let mut values = Vec::with_capacity(v.len());
                 for value in v {
-                    values.push(VBValue::try_from(value)?)
+                    values.push(MoonValue::try_from(value)?)
                 };
-                VBValue::Array(values)
+                MoonValue::Array(values)
             }
             _ => { return Err(()); }
         })
     }
 }
 
-impl Display for VBValue {
+impl Display for MoonValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            VBValue::Null => f.write_str("null"),
-            VBValue::Boolean(bool) => f.write_str(&*bool.to_string()),
-            VBValue::Integer(int) => f.write_str(&*int.to_string()),
-            VBValue::Decimal(dec) => f.write_str(&*dec.to_string()),
-            VBValue::String(string) => f.write_str(&format!("\"{string}\"")),
-            VBValue::Array(array) => {
+            MoonValue::Null => f.write_str("null"),
+            MoonValue::Boolean(bool) => f.write_str(&*bool.to_string()),
+            MoonValue::Integer(int) => f.write_str(&*int.to_string()),
+            MoonValue::Decimal(dec) => f.write_str(&*dec.to_string()),
+            MoonValue::String(string) => f.write_str(&format!("\"{string}\"")),
+            MoonValue::Array(array) => {
                 let mut result = String::new();
                 result.push('[');
                 let mut is_first_value = true;
@@ -154,14 +154,14 @@ impl FullValue {
         }
     }
 
-    pub(crate) fn resolve_value_no_context(self) -> VBValue {
+    pub(crate) fn resolve_value_no_context(self) -> MoonValue {
         match self {
-            FullValue::Null => VBValue::Null,
-            FullValue::Boolean(bool) => VBValue::Boolean(bool),
-            FullValue::Decimal(decimal) => VBValue::Decimal(decimal),
-            FullValue::Integer(integer) => VBValue::Integer(integer),
-            FullValue::String(string) => VBValue::String(string),
-            FullValue::Array(value) => VBValue::Array(value.into_iter()
+            FullValue::Null => MoonValue::Null,
+            FullValue::Boolean(bool) => MoonValue::Boolean(bool),
+            FullValue::Decimal(decimal) => MoonValue::Decimal(decimal),
+            FullValue::Integer(integer) => MoonValue::Integer(integer),
+            FullValue::String(string) => MoonValue::String(string),
+            FullValue::Array(value) => MoonValue::Array(value.into_iter()
                 .map(|value| value.resolve_value_no_context())
                 .collect()),
             _ => panic!()

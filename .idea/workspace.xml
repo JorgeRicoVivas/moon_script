@@ -7,7 +7,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Added RuntimeError for errors on Runtime" />
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Moved value to an individual module" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -74,6 +74,7 @@
       <option name="presentableId" value="Default" />
       <updated>1719092787303</updated>
       <workItem from="1719092789276" duration="2779000" />
+      <workItem from="1719096324002" duration="306000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -83,14 +84,24 @@
       <option name="project" value="LOCAL" />
       <updated>1719095561554</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Moved value to an individual module">
+      <option name="closed" value="true" />
+      <created>1719096637509</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1719096637509</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <MESSAGE value="Added RuntimeError for errors on Runtime" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added RuntimeError for errors on Runtime" />
+    <MESSAGE value="Moved value to an individual module" />
+    <option name="LAST_COMMIT_MESSAGE" value="Moved value to an individual module" />
   </component>
 </project>

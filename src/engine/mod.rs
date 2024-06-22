@@ -11,7 +11,7 @@ use crate::execution::ast::AST;
 use crate::parsing::{FunctionDefinition, FunctionInfo, Rule, SimpleParser};
 use crate::parsing::error::ParsingError;
 use crate::reduced_value_impl::impl_operators;
-use crate::value::VBValue;
+use crate::value::MoonValue;
 
 pub mod context;
 
@@ -32,7 +32,7 @@ pub struct Engine {
     unary_operators: HashMap<String, FunctionInfo>,
     binary_operation_parser: PrattParser<Rule>,
 
-    constants: HashMap<String, VBValue>,
+    constants: HashMap<String, MoonValue>,
 
 }
 
@@ -80,7 +80,7 @@ impl Default for Engine {
 
 
 impl Engine {
-    pub fn add_constant<Name: ToString, Value: Into<VBValue>>(&mut self, name: Name, value: Value) -> Option<VBValue> {
+    pub fn add_constant<Name: ToString, Value: Into<MoonValue>>(&mut self, name: Name, value: Value) -> Option<MoonValue> {
         self.constants.insert(name.to_string(), value.into())
     }
 
@@ -159,7 +159,7 @@ impl Engine {
             }
         }
     }
-    pub(crate) fn constants(&self) -> &HashMap<String, VBValue> {
+    pub(crate) fn constants(&self) -> &HashMap<String, MoonValue> {
         &self.constants
     }
     pub(crate) fn binary_operation_parser(&self) -> &PrattParser<Rule> {

@@ -6,7 +6,7 @@ use core::mem;
 use crate::execution::{ASTFunction, ConditionalStatements, RuntimeError, RuntimeVariable};
 use crate::execution::optimized_ast::OptimizedAST;
 use crate::HashMap;
-use crate::value::{FullValue, VBValue};
+use crate::value::{FullValue, MoonValue};
 
 #[derive(Debug, Clone, Default)]
 pub struct AST {
@@ -41,7 +41,7 @@ pub struct ExecutingContext {
 }
 
 impl ExecutingContext {
-    fn execute_block(&mut self, block: &Statement) -> Result<Option<VBValue>, RuntimeError> {
+    fn execute_block(&mut self, block: &Statement) -> Result<Option<MoonValue>, RuntimeError> {
         match block {
             Statement::WhileBlock { condition, statements } => {
                 while self.resolve_value(condition.clone())?.try_into()
@@ -80,13 +80,13 @@ impl ExecutingContext {
         Ok(None)
     }
 
-    fn resolve_value(&mut self, value: FullValue) -> Result<VBValue, RuntimeError> {
+    fn resolve_value(&mut self, value: FullValue) -> Result<MoonValue, RuntimeError> {
         Ok(match value {
-            FullValue::Null => VBValue::Null,
-            FullValue::Boolean(bool) => VBValue::Boolean(bool),
-            FullValue::Decimal(decimal) => VBValue::Decimal(decimal),
-            FullValue::Integer(integer) => VBValue::Integer(integer),
-            FullValue::String(string) => VBValue::String(string),
+            FullValue::Null => MoonValue::Null,
+            FullValue::Boolean(bool) => MoonValue::Boolean(bool),
+            FullValue::Decimal(decimal) => MoonValue::Decimal(decimal),
+            FullValue::Integer(integer) => MoonValue::Integer(integer),
+            FullValue::String(string) => MoonValue::String(string),
             FullValue::Array(value) => {
                 let mut res = Vec::with_capacity(value.len());
                 for value in value.into_iter().map(|value| self.resolve_value(value)) {
@@ -95,7 +95,7 @@ impl ExecutingContext {
                         Err(error) => return Err(error),
                     }
                 }
-                VBValue::Array(res)
+                MoonValue::Array(res)
             }
             FullValue::Function(function) =>
                 function.function.execute_iter(function.args.iter()
@@ -121,7 +121,7 @@ impl<'ast> ASTExecutor<'ast> {
         Self { ast, context: ExecutingContext { variables: ast.variables.clone() } }
     }
 
-    pub fn push_variable<Name: ToString, Variable: Into<VBValue>>(mut self, name: Name, variable: Variable) -> Self {
+    pub fn push_variable<Name: ToString, Variable: Into<MoonValue>>(mut self, name: Name, variable: Variable) -> Self {
         let (name, variable) = (name.to_string(), variable.into());
         if let Some(variable_index) = self.ast.parameterized_variables.get(&name) {
             self.context.variables[*variable_index] = RuntimeVariable::from(FullValue::from(variable));
@@ -129,12 +129,12 @@ impl<'ast> ASTExecutor<'ast> {
         self
     }
 
-    pub fn execute(mut self) -> Result<VBValue, RuntimeError> {
+    pub fn execute(mut self) -> Result<MoonValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&block)? {
                 return Ok(res);
             }
         }
-        Ok(VBValue::Null)
+        Ok(MoonValue::Null)
     }
 }
