@@ -1,6 +1,6 @@
 use alloc::fmt::{Debug, Formatter};
-use alloc::rc::Rc;
 use alloc::string::ToString;
+use alloc::sync::Arc;
 
 use paste::paste;
 
@@ -14,7 +14,7 @@ pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
 
 #[derive(Clone)]
 pub struct VBFunction {
-    function: Rc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError>>,
+    function: Arc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError>>,
     number_of_params: usize,
 }
 
@@ -57,7 +57,7 @@ macro_rules! impl_to_wrapped_function {
                 #[allow(unused)]
                 fn abstract_function(self) -> VBFunction {
                     VBFunction {
-                        function: Rc::new(move |values| {
+                        function: Arc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
                                 .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)
                                 .map_err(|_| RuntimeError::CannotParseArgument{} )?;)*
@@ -81,7 +81,7 @@ macro_rules! impl_to_wrapped_function {
                 #[allow(unused)]
                 fn abstract_function(self) -> VBFunction {
                     VBFunction {
-                        function: Rc::new(move |values| {
+                        function: Arc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
                                 .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)
                                 .map_err(|_| RuntimeError::CannotParseArgument{} )?;)*
