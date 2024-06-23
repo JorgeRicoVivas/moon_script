@@ -14,7 +14,7 @@ pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
 
 #[derive(Clone)]
 pub struct VBFunction {
-    function: Arc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError>>,
+    function: Arc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError> + Send + Sync>,
     number_of_params: usize,
 }
 
@@ -51,7 +51,7 @@ macro_rules! impl_to_wrapped_function {
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u8> for TFunction
                 where $($param_names: TryFrom<MoonValue, Error=[<Error $param_names>] > + 'static,)*
                       TReturn: Into<MoonValue> + 'static,
-                      TFunction: Fn($($param_names),*) -> Result<TReturn,TError> + 'static
+                      TFunction: Fn($($param_names),*) -> Result<TReturn,TError> + 'static + Send + Sync
             {
                 #[allow(unused_mut)]
                 #[allow(unused)]
@@ -75,7 +75,7 @@ macro_rules! impl_to_wrapped_function {
                 ToAbstractFunction<($($param_names,)*), TReturn, TFunction, u16> for TFunction
                 where $($param_names: TryFrom<MoonValue, Error=[<Error $param_names>]> + 'static,)*
                       TReturn: Into<MoonValue> + 'static,
-                      TFunction: Fn($($param_names),*) -> TReturn + 'static
+                      TFunction: Fn($($param_names),*) -> TReturn + 'static + Send + Sync
             {
                 #[allow(unused_mut)]
                 #[allow(unused)]
