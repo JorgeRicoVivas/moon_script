@@ -42,6 +42,8 @@ pub struct ExecutingContext {
 
 impl ExecutingContext {
     fn execute_block(&mut self, block: &Statement) -> Result<Option<MoonValue>, RuntimeError> {
+        log::trace!("Executing block:\n{block:#?}");
+        log::trace!("Variables at this point are:\n{:#?}", self.variables);
         match block {
             Statement::WhileBlock { condition, statements } => {
                 while self.resolve_value(condition.clone())?.try_into()
@@ -55,8 +57,10 @@ impl ExecutingContext {
             }
             Statement::IfElseBlock { conditional_statements: conditional_blocks } => {
                 for block in conditional_blocks {
-                    if self.resolve_value(block.condition.clone())?.try_into()
-                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })? {
+                    let boolean : bool = self.resolve_value(block.condition.clone())?.try_into()
+                        .map_err(|_| RuntimeError::CannotTurnPredicateToBool { type_of_statement: "if", function_error_message: "".to_string() })?;
+                    if boolean {
+                        log::trace!("Executing statements of if block:\n{:#?}", block.statements);
                         for statement in block.statements.iter() {
                             if let Some(res) = self.execute_block(statement)? {
                                 return Ok(Some(res));

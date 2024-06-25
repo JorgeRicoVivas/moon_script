@@ -22,7 +22,7 @@ property = { ident ~ (WHITE_SPACE* ~ "." ~ WHITE_SPACE* ~ ident ~ WHITE_SPACE* ~
 
 unary_operator = { ("!"|"-") }
 
-UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ VALUE }
+UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ (UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident) }
 
 //binary operator cannot self-chain
 BINARY_OPERATION = {
@@ -44,7 +44,7 @@ BINARY_OPERATION = {
     )
 }
 
-VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boolean|property|fncall|ident }
+VALUE = { BINARY_OPERATION|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident }
 
 PREDICATE = { VALUE }
 
@@ -57,10 +57,7 @@ IF_BLOCK = {
 WHILE_BLOCK = { "while" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
 RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE  }
 
-STATEMENTS = { (WHITE_SPACE* ~
-    (WHILE_BLOCK|IF_BLOCK|
-        ((ASSIGNMENT|RETURN_CALL|fncall|property) ~ WHITE_SPACE* ~ ";"? )
-    ))* ~ WHITE_SPACE* }
+STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|((ASSIGNMENT|RETURN_CALL|fncall|property) ~ WHITE_SPACE* ~ ";"? )))* ~ WHITE_SPACE* }
 BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~ EOI  }
 
 

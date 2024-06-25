@@ -100,14 +100,15 @@ impl FunctionDefinition {
 
 
 fn optimize_variables(context: &mut ContextBuilder, inlineable_variables: Vec<(String, usize)>, statements: &mut Vec<Statement>) -> (Vec<RuntimeVariable>, HashMap<String, usize>) {
-    let mut variables = context.take_all_variables().into_iter()
+    let variables = context.take_all_variables();
+    let mut variables = variables.into_iter()
         .flat_map(|(block_level, variables)| {
             variables.into_iter().enumerate()
                 .map(move |(var_index, variable)| ((block_level, var_index), variable))
         }).collect::<HashMap<_, _>>();
 
-    let mut used_variables = HashMap::new();
 
+    let mut used_variables = HashMap::new();
     statements.iter_mut().for_each(|statement| {
         statement_parsing::walk_statement(&mut |input| {
             match input {
@@ -140,8 +141,8 @@ fn optimize_variables(context: &mut ContextBuilder, inlineable_variables: Vec<(S
             }
         }, statement)
     });
-
     let mut used_variables = used_variables.into_iter().collect::<Vec<_>>();
+
     used_variables.sort_by(|((block_a, index_a), _), ((block_b, index_b), _)| {
         block_a.cmp(block_b).then_with(|| index_a.cmp(index_b))
     });

@@ -27,9 +27,11 @@ mod test {
         return effect.effect.effect.set_color(1,0,0.2);
     "#;
 
+
+
     #[test]
     fn test() {
-        let _ = simple_logger::init_with_level(log::Level::Trace);
+        //let _ = simple_logger::init_with_level(log::Level::Trace);
 
         let mut engine = Engine::default();
         let mut context = ContextBuilder::default();
@@ -39,13 +41,23 @@ mod test {
         context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("effect")
             .associated_type("effect")
             .lazy_value(|| 377397));
-        engine.add_function(crate::parsing::FunctionDefinition::new("effect", |()| 1)
-            .associated_type_name("effect").knwon_return_type_name("effect"));
+
+        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("forced_true")
+            .associated_type("boolean")
+            .lazy_value(|| true));
+
 
         engine.add_function(crate::parsing::FunctionDefinition::new("alt", |()| 1)
             .associated_type_name("agent").knwon_return_type_name("int"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("is_flag", |()| false)
+            .associated_type_name("agent").knwon_return_type_name("bool"));
+
+
         engine.add_function(crate::parsing::FunctionDefinition::new("set_scale",
                                                                     |(), _scale: f32| {}, )
+            .associated_type_name("effect"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("lived_time",
+                                                                    |()| {3}, )
             .associated_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("set_pos",
                                                                     |(), _x: f32, _y: f32, _z: f32| {},
@@ -56,14 +68,29 @@ mod test {
                                                                     },
         ).associated_type_name("effect"));
 
+        engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()|println!("Internal killing"))
+            .associated_type_name("effect").knwon_return_type_name("effect"));
+
+
+        engine.add_function(crate::parsing::FunctionDefinition::new("effect", |()| 1)
+            .associated_type_name("effect").knwon_return_type_name("effect"));
+
         /*
         let ast = engine.parse(INPUT, context).map_err(|error| panic!("{error}"));
         println!("{ast:#?}");
         println!("{:#?}",ast.unwrap().executor().execute());
         */
 
-        let ast = engine.parse(r#"if 1 { print("hi"); print("How did we got there?"); } "#, context).map_err(|error| panic!("{error}"));
-        println!("{ast:#?}");
+        let ast = engine.parse(r#"
+        let should_kill = !agent.is_flag() && effect.lived_time > 5;
+        if should_kill {
+            print("Killing");
+            effect.kill();
+        }
+
+
+        "#, context).map_err(|error| panic!("{error}"));
+        //println!("{ast:#?}");
         println!("{:#?}",ast.unwrap().executor().execute());
     }
 }
