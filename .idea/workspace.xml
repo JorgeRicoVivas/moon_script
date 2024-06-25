@@ -7,8 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Added the missing || operator">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,6 +82,8 @@
       <workItem from="1719098628809" duration="3252000" />
       <workItem from="1719308583514" duration="953000" />
       <workItem from="1719311277213" duration="9000" />
+      <workItem from="1719323540776" duration="75000" />
+      <workItem from="1719324147923" duration="510000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -138,7 +141,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719309551186</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Added the missing || operator">
+      <option name="closed" value="true" />
+      <created>1719323608341</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1719323608341</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -153,6 +164,7 @@
     <MESSAGE value="No longer using Rc but Arc instead" />
     <MESSAGE value="VBFunction now also is Send and Sync" />
     <MESSAGE value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
-    <option name="LAST_COMMIT_MESSAGE" value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
+    <MESSAGE value="Added the missing || operator" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added the missing || operator" />
   </component>
 </project>

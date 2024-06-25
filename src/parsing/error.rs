@@ -32,7 +32,7 @@ impl<'input> From<ParsingError<'input>> for SimpleError<'input> {
         match value {
             ParsingError::Parsing(parsing) => {
                 let mut error = SimpleError::new()
-                    .error_detail(format!("On {} because of {}", parsing.line(), parsing.variant));
+                    .error_detail(format!("On {} because of {}\nDetail:{}", parsing.line(), parsing.variant, parsing));
                 match parsing.line_col {
                     LineColLocation::Pos((start_line, start_col)) => {
                         error = error.start_point_of_error(start_line, start_col);
