@@ -13,7 +13,7 @@ use crate::engine::context::ContextBuilder;
 use crate::engine::Engine;
 use crate::execution::ast::{AST, Statement};
 use crate::execution::RuntimeVariable;
-use crate::function::{ToAbstractFunction, VBFunction};
+use crate::function::{MoonFunction, ToAbstractFunction};
 use crate::HashMap;
 use crate::value::FullValue;
 
@@ -25,9 +25,10 @@ pub mod error;
 #[grammar = "language_definition.pest"]
 pub struct SimpleParser;
 
+#[derive(Clone, Debug)]
 pub struct FunctionInfo {
     can_inline_result: bool,
-    function: VBFunction,
+    function: MoonFunction,
     return_type_name: Option<String>,
 }
 
@@ -37,17 +38,17 @@ impl FunctionInfo {
         Self::new_raw(function.abstract_function())
     }
 
-    pub(crate) fn new_raw(function: VBFunction) -> Self {
+    pub(crate) const fn new_raw(function: MoonFunction) -> Self {
         Self { function, return_type_name: None, can_inline_result: false }
     }
 
-    pub(crate) fn inline(mut self) -> FunctionInfo {
+    pub(crate) const fn inline(mut self) -> FunctionInfo {
         self.can_inline_result = true;
         self
     }
 }
 
-
+#[derive(Clone, Debug)]
 pub struct FunctionDefinition {
     pub(crate) associated_type_name: Option<String>,
     pub(crate) module_name: Option<String>,
@@ -57,7 +58,7 @@ pub struct FunctionDefinition {
 
 impl FunctionDefinition {
     pub fn new<Name: Into<String>, Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
-    (function_name: Name, function: AbstractFunction) -> FunctionDefinition {
+    (function_name: Name, function: AbstractFunction) -> Self {
         Self {
             function_info: FunctionInfo::new_raw(function.abstract_function()),
             function_name: function_name.into(),
@@ -65,21 +66,33 @@ impl FunctionDefinition {
             associated_type_name: None,
         }
     }
-    pub fn module_name<Name: Into<String>>(mut self, module_name: Name) -> FunctionDefinition {
+
+    pub fn name<Name: Into<String>>(mut self, function_name: Name) -> Self {
+        self.function_name = function_name.into();
+        self
+    }
+
+    pub fn function<Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
+    (mut self, function: AbstractFunction) -> Self {
+        self.function_info = FunctionInfo::new_raw(function.abstract_function());
+        self
+    }
+
+    pub fn module_name<Name: Into<String>>(mut self, module_name: Name) -> Self {
         self.module_name = Some(module_name.into());
         self
     }
-    pub fn associated_type_name<Name: Into<String>>(mut self, associated_type_name: Name) -> FunctionDefinition {
+    pub fn associated_type_name<Name: Into<String>>(mut self, associated_type_name: Name) -> Self {
         self.associated_type_name = Some(associated_type_name.into());
         self
     }
 
-    pub fn inline(mut self) -> FunctionDefinition {
+    pub const fn inline(mut self) -> Self {
         self.function_info.can_inline_result = true;
         self
     }
 
-    pub fn knwon_return_type_name<Name: ToString>(mut self, return_type_name: Name) -> FunctionDefinition {
+    pub fn knwon_return_type_name<Name: ToString>(mut self, return_type_name: Name) -> Self {
         self.function_info.return_type_name = Some(return_type_name.to_string());
         self
     }

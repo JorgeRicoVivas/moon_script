@@ -8,31 +8,32 @@ use crate::execution::RuntimeError;
 use crate::value::MoonValue;
 
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
-    fn abstract_function(self) -> VBFunction;
+    fn abstract_function(self) -> MoonFunction;
     fn dummy(_params: Params, _return_value: Return, _dummy: Dummy) {}
 }
 
 #[derive(Clone)]
-pub struct VBFunction {
+pub struct MoonFunction {
     function: Arc<dyn Fn(&mut dyn Iterator<Item=Result<MoonValue, RuntimeError>>) -> Result<MoonValue, RuntimeError> + Send + Sync>,
     number_of_params: usize,
 }
+
+impl Debug for MoonFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("MoonFunction")
+            .field("Function", &Arc::as_ptr(&self.function))
+            .field("Number of params", &self.number_of_params)
+            .finish()
+    }
+}
+
 
 pub enum VBFunctionExecutingError {
     MissingValue,
     CouldNotParse,
 }
 
-impl Debug for VBFunction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("VBFunction")
-            .field("function", &"..")
-            .field("number_of_parameters", &self.number_of_params)
-            .finish()
-    }
-}
-
-impl VBFunction {
+impl MoonFunction {
     #[inline]
     pub(crate) fn execute_iter<'values, ValuesIter>(&self, mut values: ValuesIter) -> Result<MoonValue, RuntimeError> where ValuesIter: Iterator<Item=Result<MoonValue, RuntimeError>> {
         (self.function)(&mut values)
@@ -55,8 +56,8 @@ macro_rules! impl_to_wrapped_function {
             {
                 #[allow(unused_mut)]
                 #[allow(unused)]
-                fn abstract_function(self) -> VBFunction {
-                    VBFunction {
+                fn abstract_function(self) -> MoonFunction {
+                    MoonFunction {
                         function: Arc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
                                 .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)
@@ -79,8 +80,8 @@ macro_rules! impl_to_wrapped_function {
             {
                 #[allow(unused_mut)]
                 #[allow(unused)]
-                fn abstract_function(self) -> VBFunction {
-                    VBFunction {
+                fn abstract_function(self) -> MoonFunction {
+                    MoonFunction {
                         function: Arc::new(move |values| {
                             $(let paste::item!{[<$param_names:lower>]}  = <$param_names>::try_from(values.next()
                                 .ok_or_else(|| RuntimeError::AnArgumentIsMissing{} )??)

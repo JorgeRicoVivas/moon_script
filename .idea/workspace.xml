@@ -7,7 +7,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Renamed VBValue to MoonValue" />
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="VBFunction now also is Send and Sync">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/optimized_ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/optimized_ast.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/function/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/function/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/mod.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -76,6 +82,8 @@
       <workItem from="1719092789276" duration="2779000" />
       <workItem from="1719096324002" duration="306000" />
       <workItem from="1719096676398" duration="102000" />
+      <workItem from="1719098628809" duration="3252000" />
+      <workItem from="1719308583514" duration="737000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -101,7 +109,31 @@
       <option name="project" value="LOCAL" />
       <updated>1719096767291</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="ParsingError can now turn into SimpleError">
+      <option name="closed" value="true" />
+      <created>1719100394813</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1719100394814</updated>
+    </task>
+    <task id="LOCAL-00005" summary="No longer using Rc but Arc instead">
+      <option name="closed" value="true" />
+      <created>1719100933740</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1719100933740</updated>
+    </task>
+    <task id="LOCAL-00006" summary="VBFunction now also is Send and Sync">
+      <option name="closed" value="true" />
+      <created>1719101657563</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1719101657563</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -112,6 +144,9 @@
     <MESSAGE value="Added RuntimeError for errors on Runtime" />
     <MESSAGE value="Moved value to an individual module" />
     <MESSAGE value="Renamed VBValue to MoonValue" />
-    <option name="LAST_COMMIT_MESSAGE" value="Renamed VBValue to MoonValue" />
+    <MESSAGE value="ParsingError can now turn into SimpleError" />
+    <MESSAGE value="No longer using Rc but Arc instead" />
+    <MESSAGE value="VBFunction now also is Send and Sync" />
+    <option name="LAST_COMMIT_MESSAGE" value="VBFunction now also is Send and Sync" />
   </component>
 </project>

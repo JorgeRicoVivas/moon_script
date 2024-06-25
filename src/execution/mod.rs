@@ -8,7 +8,7 @@ use simple_detailed_error::{SimpleErrorDetail, SimpleErrorExplanation};
 
 use ast::Statement;
 
-use crate::function::VBFunction;
+use crate::function::MoonFunction;
 use crate::value::FullValue;
 
 pub mod optimized_ast;
@@ -43,7 +43,7 @@ impl SimpleErrorDetail for RuntimeError {
 
 #[derive(Clone, Debug)]
 pub struct ASTFunction {
-    pub(crate) function: VBFunction,
+    pub(crate) function: MoonFunction,
     pub(crate) args: Vec<FullValue>,
 }
 

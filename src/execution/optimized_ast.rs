@@ -9,7 +9,7 @@ use core::ops::Range;
 use crate::execution::ast::AST;
 use crate::execution::ast::Statement;
 use crate::execution::RuntimeError;
-use crate::function::VBFunction;
+use crate::function::MoonFunction;
 use crate::HashMap;
 use crate::value::{FullValue, MoonValue};
 
@@ -62,7 +62,7 @@ enum OptimizedBlock {
 
 #[derive(Clone, Debug)]
 struct OptimizedASTFunction {
-    function: VBFunction,
+    function: MoonFunction,
     args: MultiDirection<OPTIMIZED_AST_CONTENT_TYPE_VALUE>,
 }
 
