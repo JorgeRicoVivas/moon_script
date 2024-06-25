@@ -28,6 +28,7 @@ mod test {
     "#;
 
 
+
     #[test]
     fn test() {
         let _ = simple_logger::init_with_level(log::Level::Trace);
@@ -57,8 +58,13 @@ mod test {
                                                                     },
         ).associated_type_name("effect"));
 
+        /*
         let ast = engine.parse(INPUT, context).map_err(|error| panic!("{error}"));
+        println!("{ast:#?}");
+        println!("{:#?}",ast.unwrap().executor().execute());
+        */
 
+        let ast = engine.parse("return 2*3%4;", context).map_err(|error| panic!("{error}"));
         println!("{ast:#?}");
         println!("{:#?}",ast.unwrap().executor().execute());
     }

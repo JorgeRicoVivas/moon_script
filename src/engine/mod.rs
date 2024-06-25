@@ -62,11 +62,11 @@ impl Default for Engine {
                 })
                 .collect(),
             binary_operation_parser: PrattParser::new()
-                .op(sums_ops)
-                .op(mul_ops)
-                .op(rem_op)
-                .op(comparators_ops)
                 .op(logic_gate_comparators)
+                .op(comparators_ops)
+                .op(sums_ops)
+                .op(rem_op)
+                .op(mul_ops)
             ,
             constants: Default::default(),
         };
