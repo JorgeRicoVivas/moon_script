@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-extern crate pest;
+pub extern crate pest;
+
 
 #[cfg(feature = "std")]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
