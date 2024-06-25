@@ -24,7 +24,7 @@ mod test {
     use crate::engine::Engine;
 
     const INPUT: &str = r#"
-        effect.effect.effect.set_color(1,0,0.2);
+        return effect.effect.effect.set_color(1,0,0.2);
     "#;
 
 
@@ -52,12 +52,15 @@ mod test {
                                                                     |(), _x: f32, _y: f32, _z: f32| {},
         ).associated_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("set_color",
-                                                                    |(), _x: f32, _y: f32, _z: f32| {},
+                                                                    |(), x: f32, y: f32, z: f32| {
+                                                                        x+y+z
+                                                                    },
         ).associated_type_name("effect"));
 
         let ast = engine.parse(INPUT, context).map_err(|error| panic!("{error}"));
 
         println!("{ast:#?}");
+        println!("{:#?}",ast.unwrap().executor().execute());
     }
 }
 

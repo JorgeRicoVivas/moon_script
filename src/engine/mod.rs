@@ -38,6 +38,14 @@ pub struct Engine {
 
 impl Default for Engine {
     fn default() -> Self {
+        let sums_ops = Op::infix(Rule::sum, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left);
+        let mul_ops = Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left);
+        let rem_op = Op::infix(Rule::rem, Assoc::Left);
+        let comparators_ops = Op::infix(Rule::eq, Assoc::Left) | Op::infix(Rule::neq, Assoc::Left)
+            | Op::infix(Rule::gt, Assoc::Left) | Op::infix(Rule::gte, Assoc::Left)
+            | Op::infix(Rule::lt, Assoc::Left) | Op::infix(Rule::lte, Assoc::Left);
+        let logic_gate_comparators = Op::infix(Rule::or, Assoc::Left) | Op::infix(Rule::xor, Assoc::Left)
+            | Op::infix(Rule::and, Assoc::Left);
         let res = Self {
             associated_functions: Default::default(),
             functions: Default::default(),
@@ -54,14 +62,12 @@ impl Default for Engine {
                 })
                 .collect(),
             binary_operation_parser: PrattParser::new()
-                .op(Op::infix(Rule::sum, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left))
-                .op(Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left))
-                .op(Op::infix(Rule::rem, Assoc::Left))
-                .op(Op::infix(Rule::eq, Assoc::Left) | Op::infix(Rule::neq, Assoc::Left)
-                    | Op::infix(Rule::gt, Assoc::Left) | Op::infix(Rule::gte, Assoc::Left)
-                    | Op::infix(Rule::lt, Assoc::Left) | Op::infix(Rule::lte, Assoc::Left))
-                .op(Op::infix(Rule::or, Assoc::Left) | Op::infix(Rule::xor, Assoc::Left)
-                    | Op::infix(Rule::and, Assoc::Left) | Op::infix(Rule::rem, Assoc::Left)),
+                .op(sums_ops)
+                .op(mul_ops)
+                .op(rem_op)
+                .op(comparators_ops)
+                .op(logic_gate_comparators)
+            ,
             constants: Default::default(),
         };
         #[cfg(feature = "std")]

@@ -87,7 +87,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                             array_1.extend(array_2.into_iter());
                             MoonValue::Array(array_1)
                         }
-                        _ => return Err("Operator '+' can only be applied between booleans, integers, decimals, arrays or strings".to_string()),
+                        (arg_1, arg_2) => return Err(format!("Operator '+' can only be applied between booleans, integers, decimals, arrays or strings, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
                     })
                 }
             }
@@ -97,14 +97,14 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 && !bool_2)),
                               |int_1, int_2| Ok(MoonValue::Integer(int_1.checked_sub(int_2).unwrap_or(i128::MIN))),
                               |dec_1, dec_2| Ok(MoonValue::Decimal(dec_1 - dec_2)))
-                .map_err(|_| "Operator '-' can only be applied between booleans, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '-' can only be applied between booleans, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("*", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 && bool_2)),
                               |int_1, int_2| Ok(MoonValue::Integer(int_1.checked_mul(int_2).unwrap_or(i128::MAX))),
                               |dec_1, dec_2| Ok(MoonValue::Decimal(dec_1 * dec_2)))
-                .map_err(|_| "Operator '*' can only be applied between booleans, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '*' can only be applied between booleans, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("/", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
@@ -120,14 +120,14 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                                   }
                               },
                               |dec_1, dec_2| Ok(MoonValue::Decimal(dec_1 / dec_2)))
-                .map_err(|_| "Operator '/' can only be applied between integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '/' can only be applied between integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("%", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |_, _| Err("Operator '%' cannot be applied between booleans".to_string()),
                               |int_1, int_2| Ok(MoonValue::Integer(int_1.checked_rem(int_2).unwrap_or(0))),
                               |dec_1, dec_2| Ok(MoonValue::Decimal(dec_1 % dec_2)))
-                .map_err(|_| "Operator '%' can only be applied between integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '%' can only be applied between integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("&&", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
@@ -139,7 +139,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                     let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
                     MoonValue::Integer(int_1 & int_2)
                 }
-                _ => return Err("Operator '&&' can only be applied between boolean, integers or decimals".to_string()),
+                (arg_1, arg_2) => return Err(format!("Operator '&&' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
             })
         }),
         ("||", |arg_1, arg_2| {
@@ -152,7 +152,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                     let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
                     MoonValue::Integer(int_1 | int_2)
                 }
-                _ => return Err("Operator '||' can only be applied between boolean, integers or decimals".to_string()),
+                (arg_1, arg_2) => return Err(format!("Operator '||' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
             })
         }),
         ("^", |arg_1, arg_2| {
@@ -165,7 +165,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                     let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
                     MoonValue::Integer(int_1 ^ int_2)
                 }
-                _ => return Err("Operator '^' can only be applied between boolean, integers or decimals".to_string()),
+                (arg_1, arg_2) => return Err(format!("Operator '^' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
             })
         }),
         ("<<", |arg_1, arg_2| {
@@ -175,7 +175,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                     let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
                     MoonValue::Integer(int_1 << int_2)
                 }
-                _ => return Err("Operator '<<' can only be applied between integers or decimals".to_string()),
+                (arg_1, arg_2) => return Err(format!("Operator '<<' can only be applied between integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
             })
         }),
         (">>", |arg_1, arg_2| {
@@ -185,7 +185,7 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                     let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
                     MoonValue::Integer(int_1 >> int_2)
                 }
-                _ => return Err("Operator '>>' can only be applied between integers or decimals".to_string()),
+                (arg_1, arg_2) => return Err(format!("Operator '>>' can only be applied between integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}")),
             })
         }),
         ("==", |arg_1, arg_2| {
@@ -199,28 +199,28 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 > bool_2)),
                               |int_1, int_2| Ok(MoonValue::Boolean(int_1 > int_2)),
                               |dec_1, dec_2| Ok(MoonValue::Boolean(dec_1 > dec_2)))
-                .map_err(|_| "Operator '>' can only be applied between boolean, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '>' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("<", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 < bool_2)),
                               |int_1, int_2| Ok(MoonValue::Boolean(int_1 < int_2)),
                               |dec_1, dec_2| Ok(MoonValue::Boolean(dec_1 < dec_2)))
-                .map_err(|_| "Operator '<' can only be applied between boolean, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '<' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         (">=", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 >= bool_2)),
                               |int_1, int_2| Ok(MoonValue::Boolean(int_1 >= int_2)),
                               |dec_1, dec_2| Ok(MoonValue::Boolean(dec_1 >= dec_2)))
-                .map_err(|_| "Operator '>?' can only be applied between boolean, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '>=' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
         ("<=", |arg_1, arg_2| {
             arithmetic_choice(arg_1, arg_2,
                               |bool_1, bool_2| Ok(MoonValue::Boolean(bool_1 <= bool_2)),
                               |int_1, int_2| Ok(MoonValue::Boolean(int_1 <= int_2)),
                               |dec_1, dec_2| Ok(MoonValue::Boolean(dec_1 <= dec_2)))
-                .map_err(|_| "Operator '<=' can only be applied between boolean, integers or decimals".to_string())?
+                .map_err(|(arg_1, arg_2)| format!("Operator '<=' can only be applied between boolean, integers or decimals, while args are:\narg1: {arg_1}\narg2: {arg_2}"))?
         }),
     ]
 }
