@@ -131,9 +131,9 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
             let has_let = ident.as_span().start() > token_start;
             let declare_variable_as_new = has_let;
 
-            let value = build_value_token(pairs.next().unwrap(), &base, context).add_where_error(token_str, line_and_column)?;
             match ident.as_rule() {
                 Rule::ident => {
+                    let value = build_value_token(pairs.next().unwrap(), &base, context).add_where_error(token_str, line_and_column)?;
                     if value.is_simple_value() {
                         let compiletime_variable_information = CompiletimeVariableInformation {
                             associated_type_name: value.type_name(context),
@@ -163,6 +163,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                     }
                 }
                 Rule::property => {
+                    let value = build_value_token(pairs.next().unwrap(), &base, context).add_where_error(token_str, line_and_column)?;
                     let prop = value_parsing::parse_property(ident, base, context, Some("set_"), Some(value))
                         .add_where_error(token_str, line_and_column)?;
                     match prop {
@@ -186,6 +187,16 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                     //ignored, execution of unrequired functions isn't taken
                 }
             })
+        }
+        Rule::property => {
+            let prop = value_parsing::parse_property(token, base, context, Some("set_"), None)
+                .add_where_error(token_str, line_and_column)?;
+            match prop {
+                FullValue::Function(function) => {
+                    Ok(vec![Statement::FnCall(function)])
+                }
+                _ => Ok(Vec::new()),
+            }
         }
         _ => { unreachable!("Shouldn't have found a rule of type: {:?}={}", token.as_rule(), token.as_str()) }
     }

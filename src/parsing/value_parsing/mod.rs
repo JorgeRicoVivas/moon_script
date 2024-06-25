@@ -158,8 +158,8 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
 }
 
 //noinspection RsBorrowChecker
-pub(crate) fn parse_property<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, prepend_on_last_property: Option<&'static str>, mut extra_value_for_last_property: Option<FullValue>) -> Result<FullValue, Vec<SimpleError<'input>>> {
-    let mut idents = token.into_inner();
+pub(crate) fn parse_property<'input>(idents: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, prepend_on_last_property: Option<&'static str>, mut extra_value_for_last_property: Option<FullValue>) -> Result<FullValue, Vec<SimpleError<'input>>> {
+    let mut idents = idents.into_inner();
     let variable = idents.next().unwrap();
     let (block_level, var_index, variable) =
         context.find_variable(variable.as_str())
