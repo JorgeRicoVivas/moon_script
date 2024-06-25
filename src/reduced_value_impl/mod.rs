@@ -2,6 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
+use std::convert::Infallible;
 
 use crate::value::{FullValue, MoonValue};
 
@@ -25,14 +26,9 @@ impl From<MoonValue> for FullValue {
 }
 
 
-impl TryFrom<MoonValue> for () {
-    type Error = ();
-
-    fn try_from(value: MoonValue) -> Result<Self, Self::Error> {
-        match value {
-            MoonValue::Null => Ok(()),
-            _ => Err(())
-        }
+impl From<MoonValue> for () {
+    fn from(value: MoonValue) -> Self {
+        ()
     }
 }
 

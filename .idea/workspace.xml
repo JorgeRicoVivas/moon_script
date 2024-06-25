@@ -7,7 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Amended the expanded usage of terminal statement character (';') to just one common usage" />
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Amended the expanded usage of terminal statement character (';') to just one common usage">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -81,7 +83,7 @@
       <workItem from="1719311277213" duration="9000" />
       <workItem from="1719323540776" duration="75000" />
       <workItem from="1719324147923" duration="510000" />
-      <workItem from="1719324879187" duration="4378000" />
+      <workItem from="1719324879187" duration="5275000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -203,7 +205,23 @@
       <option name="project" value="LOCAL" />
       <updated>1719329046837</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Amended the expanded usage of terminal statement character (';') to just one common usage">
+      <option name="closed" value="true" />
+      <created>1719329607150</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1719329607150</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Amended the expanded usage of terminal statement character (';') to just one common usage">
+      <option name="closed" value="true" />
+      <created>1719329618347</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1719329618347</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
