@@ -53,7 +53,7 @@ fn walk_value<Action: FnMut(WalkInput)>(action: &mut Action, value: &mut FullVal
 pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
     let token_str = token.as_str();
     let line_and_column = parsing::line_and_column_of_token(&token, context);
-    log::trace!("Parsing rule {:?} with contents: {}", token.as_rule(), token.as_str());
+    log::trace!("Parsing staement rule {:?} with contents: {}", token.as_rule(), token.as_str());
     match token.as_rule() {
         Rule::STATEMENTS => {
             parse_statements(token, base, context)

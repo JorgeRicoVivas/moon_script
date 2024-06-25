@@ -28,3 +28,6 @@ big_functions = ["medium_functions"]
 massive_functions = ["big_functions"]
 ## Parsing errors will get colorized when printing them on the terminal.
 colorization = ["dep:string_colorization", "dep:colored", "simple_detailed_error/colorization"]
+
+[dev-dependencies]
+simple_logger = "5.0.0"

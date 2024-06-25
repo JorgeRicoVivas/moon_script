@@ -18,6 +18,50 @@ pub mod parsing;
 pub mod function;
 pub mod value;
 
+#[cfg(test)]
+mod test {
+    use crate::engine::context::ContextBuilder;
+    use crate::engine::Engine;
+
+    const INPUT: &str = r#"
+        effect.effect.effect.set_color(1,0,0.2);
+    "#;
+
+
+    #[test]
+    fn test() {
+        let _ = simple_logger::init_with_level(log::Level::Trace);
+
+        let mut engine = Engine::default();
+        let mut context = ContextBuilder::default();
+        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("agent")
+            .associated_type("agent")
+            .lazy_value(|| 46397));
+        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("effect")
+            .associated_type("effect")
+            .lazy_value(|| 377397));
+        engine.add_function(crate::parsing::FunctionDefinition::new("effect", |()| 1)
+            .associated_type_name("effect").knwon_return_type_name("effect"));
+
+        engine.add_function(crate::parsing::FunctionDefinition::new("alt", |()| 1)
+            .associated_type_name("agent").knwon_return_type_name("int"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("set_scale",
+                                                                    |(), _scale: f32| {}, )
+            .associated_type_name("effect"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("set_pos",
+                                                                    |(), _x: f32, _y: f32, _z: f32| {},
+        ).associated_type_name("effect"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("set_color",
+                                                                    |(), _x: f32, _y: f32, _z: f32| {},
+        ).associated_type_name("effect"));
+
+        let ast = engine.parse(INPUT, context).map_err(|error| panic!("{error}"));
+
+        println!("{ast:#?}");
+    }
+}
+
+
 
 /*
 

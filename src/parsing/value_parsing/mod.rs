@@ -22,6 +22,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
     }
     let token_str = token.as_str();
     let token_rule = token.as_rule();
+    log::trace!("Parsing complex token {token_rule:?} = {token_str}");
     let res = match token.as_rule() {
         Rule::BINARY_OPERATION => {
             let res = &base.binary_operation_parser()
@@ -85,21 +86,22 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
         Rule::fncall => {
             let mut errors = Vec::new();
             let mut token = token.into_inner();
+            let mut object = None;
             let mut object_type = None;
             let mut module = None;
             let function_name: &str;
             loop {
                 let current_token = token.next().unwrap();
                 let current_token_as_str = current_token.as_str();
-
                 match current_token.as_rule() {
                     Rule::fncall_object => {
-                        object_type = Some(context.find_variable(&current_token_as_str)
-                            .map(|(_, _, var)| var)
-                            .ok_or_else(|| vec![ASTBuildingError::VariableNotInScope { variable_name: current_token_as_str }.into()])?
+                        let variable_object = context.find_variable(&current_token_as_str)
+                            .ok_or_else(|| vec![ASTBuildingError::VariableNotInScope { variable_name: current_token_as_str }.into()])?;
+                        object_type = Some(variable_object.2
                             .associated_type_name.clone()
                             .ok_or_else(|| vec![ASTBuildingError::CouldntInlineVariableOfUnknownType { variable_name: current_token_as_str }.into()])?
-                        )
+                        );
+                        object = Some(FullValue::Variable {block_level:variable_object.0, var_index:variable_object.1});
                     }
                     Rule::fncall_module_name => module = Some(current_token_as_str),
                     Rule::fncall_function_name => {
@@ -109,10 +111,13 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                     _ => { panic!() }
                 }
             }
-            let args = token
+            let mut args = token
                 .map(|argument| build_value_token(argument, base, context))
                 .on_errors(|error| errors.extend(error.into_iter()))
                 .collect::<Vec<_>>();
+            if let Some(variable) = object{
+                args.insert(0, variable);
+            }
 
             let function = base.find_function(object_type.clone(), module, function_name)
                 .ok_or_else(|| vec![ASTBuildingError::FunctionNotFound { function_name, associated_to_type: object_type.clone(), module }.into()])?;

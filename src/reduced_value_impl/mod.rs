@@ -2,7 +2,6 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
-use std::convert::Infallible;
 
 use crate::value::{FullValue, MoonValue};
 
@@ -27,7 +26,7 @@ impl From<MoonValue> for FullValue {
 
 
 impl From<MoonValue> for () {
-    fn from(value: MoonValue) -> Self {
+    fn from(_value: MoonValue) -> Self {
         ()
     }
 }
