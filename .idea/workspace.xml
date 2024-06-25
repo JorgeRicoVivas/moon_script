@@ -7,8 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Parsing error now offer the whole display rather than a reduced one.">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Binary operator now tried after property and fncall">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/language_definition.pest" beforeDir="false" afterPath="$PROJECT_DIR$/src/language_definition.pest" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,7 +84,7 @@
       <workItem from="1719311277213" duration="9000" />
       <workItem from="1719323540776" duration="75000" />
       <workItem from="1719324147923" duration="510000" />
-      <workItem from="1719324879187" duration="679000" />
+      <workItem from="1719324879187" duration="1303000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -157,7 +158,23 @@
       <option name="project" value="LOCAL" />
       <updated>1719324973359</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Binary operator now is the last one to be check among the value types">
+      <option name="closed" value="true" />
+      <created>1719325666799</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1719325666799</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Binary operator now tried after property and fncall">
+      <option name="closed" value="true" />
+      <created>1719325890691</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1719325890691</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -174,6 +191,8 @@
     <MESSAGE value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
     <MESSAGE value="Added the missing || operator" />
     <MESSAGE value="Parsing error now offer the whole display rather than a reduced one." />
-    <option name="LAST_COMMIT_MESSAGE" value="Parsing error now offer the whole display rather than a reduced one." />
+    <MESSAGE value="Binary operator now is the last one to be check among the value types" />
+    <MESSAGE value="Binary operator now tried after property and fncall" />
+    <option name="LAST_COMMIT_MESSAGE" value="Binary operator now tried after property and fncall" />
   </component>
 </project>
