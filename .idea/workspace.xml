@@ -7,9 +7,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Last fn call now is taken as a return statement">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Binary operations no longer precedes unary operations">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/execution/ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/ast.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/language_definition.pest" beforeDir="false" afterPath="$PROJECT_DIR$/src/language_definition.pest" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/mod.rs" afterDir="false" />
     </list>
@@ -114,6 +115,7 @@
       <workItem from="1719324147923" duration="510000" />
       <workItem from="1719324879187" duration="9062000" />
       <workItem from="1719335123459" duration="8067000" />
+      <workItem from="1719350011267" duration="761000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -299,7 +301,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719340269330</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="Binary operations no longer precedes unary operations">
+      <option name="closed" value="true" />
+      <created>1719350775903</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1719350775903</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -328,7 +338,8 @@
     <MESSAGE value="Corrected wrong order of the Pratt-Parser as it gave wrong precedence on comparisons" />
     <MESSAGE value="If statement no longer execute it's first block statements when just one predicate is specified" />
     <MESSAGE value="Last fn call now is taken as a return statement" />
-    <option name="LAST_COMMIT_MESSAGE" value="Last fn call now is taken as a return statement" />
+    <MESSAGE value="Binary operations no longer precedes unary operations" />
+    <option name="LAST_COMMIT_MESSAGE" value="Binary operations no longer precedes unary operations" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
