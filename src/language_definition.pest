@@ -44,7 +44,7 @@ BINARY_OPERATION = {
     )
 }
 
-VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boolean|property|fncall|ident }
+VALUE = { UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident|BINARY_OPERATION }
 
 PREDICATE = { VALUE }
 

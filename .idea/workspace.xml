@@ -7,9 +7,8 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Added the missing || operator">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Parsing error now offer the whole display rather than a reduced one.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -84,6 +83,7 @@
       <workItem from="1719311277213" duration="9000" />
       <workItem from="1719323540776" duration="75000" />
       <workItem from="1719324147923" duration="510000" />
+      <workItem from="1719324879187" duration="679000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -149,7 +149,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719323608341</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Parsing error now offer the whole display rather than a reduced one.">
+      <option name="closed" value="true" />
+      <created>1719324973359</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1719324973359</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -165,6 +173,7 @@
     <MESSAGE value="VBFunction now also is Send and Sync" />
     <MESSAGE value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
     <MESSAGE value="Added the missing || operator" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added the missing || operator" />
+    <MESSAGE value="Parsing error now offer the whole display rather than a reduced one." />
+    <option name="LAST_COMMIT_MESSAGE" value="Parsing error now offer the whole display rather than a reduced one." />
   </component>
 </project>
