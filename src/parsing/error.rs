@@ -53,6 +53,7 @@ impl<'input> std::error::Error for ParsingError<'input> {}
 
 #[derive(Debug)]
 pub enum ASTBuildingError<'input> {
+    ConditionDoestNotResolveToBoolean { predicate:&'input str },
     VariableNotInScope { variable_name: &'input str },
     OperatorNotFound { operator: &'input str },
     FunctionNotFound { function_name: &'input str, associated_to_type: Option<String>, module: Option<&'input str> },
@@ -83,6 +84,11 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
         #[cfg(feature = "colorization")]
             let mut colorization_markers: Vec<(&str, string_colorization::Colorizer)> = Vec::new();
         match self {
+            ASTBuildingError::ConditionDoestNotResolveToBoolean { predicate } => {
+                explanation = format!("The predicate '{}' doesn't resolve to a boolean value", predicate.bold());
+                #[cfg(feature = "colorization")]
+                colorization_markers.push((predicate, style::Clear + foreground::Red));
+            }
             ASTBuildingError::VariableNotInScope { variable_name } => {
                 explanation = format!("The variable {} does not exist.", variable_name.bold());
                 solution = format!("If this is a local variable, create it before using it, like:\nlet {} = *{}*", variable_name.green().bold(), "your value".italic());

@@ -64,7 +64,7 @@ mod test {
         println!("{:#?}",ast.unwrap().executor().execute());
         */
 
-        let ast = engine.parse("return 2*3%4;", context).map_err(|error| panic!("{error}"));
+        let ast = engine.parse(r#"if 1 { print("hi"); print("How did we got there?"); } "#, context).map_err(|error| panic!("{error}"));
         println!("{ast:#?}");
         println!("{:#?}",ast.unwrap().executor().execute());
     }

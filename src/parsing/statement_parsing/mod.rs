@@ -12,6 +12,7 @@ use crate::execution::ConditionalStatements;
 use crate::external_utils::on_error_iter::IterOnError;
 use crate::parsing;
 use crate::parsing::{AddSourceOfError, Rule, value_parsing};
+use crate::parsing::error::ASTBuildingError;
 use crate::parsing::value_parsing::build_value_token;
 use crate::value::{FullValue, MoonValue};
 
@@ -79,6 +80,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
 
             let mut parsed_statements = Vec::new();
 
+            let mut first_predicate_str = None;
             let mut is_parsing_predicate = true;
             while let Some(current_token) = pairs.next() {
                 if is_parsing_predicate {
@@ -94,6 +96,9 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                     }
                     let predicate_pair = current_token.into_inner().next().unwrap();
                     let predicate_str = predicate_pair.as_str();
+                    if first_predicate_str.is_none() {
+                        first_predicate_str = Some(predicate_str);
+                    }
                     let predicate = build_value_token(predicate_pair, base, context).add_where_error(predicate_str, line_and_column)?;
                     parsed_statements.push(ConditionalStatements { condition: predicate, statements: Vec::new() })
                 } else {
@@ -109,7 +114,20 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                 return Ok(Vec::new());
             }
             if parsed_statements.len() == 1 {
-                return Ok(parsed_statements.swap_remove(0).statements);
+                let single_conditional_block = parsed_statements.swap_remove(0);
+                if single_conditional_block.condition.is_simple_value() {
+                    let condition = single_conditional_block.condition.resolve_value_no_context();
+                    let should_execute: bool = TryFrom::try_from(condition).map_err(|_|
+                        vec![ASTBuildingError::ConditionDoestNotResolveToBoolean { predicate: first_predicate_str.unwrap() }.into()])
+                        .add_where_error(token_str, line_and_column)?;
+                    if should_execute {
+                        return Ok(single_conditional_block.statements);
+                    } else {
+                        return Ok(vec![]);
+                    }
+                } else {
+                    return Ok(vec![Statement::IfElseBlock { conditional_statements: vec![single_conditional_block] }]);
+                }
             }
             let first_block = parsed_statements.get(0).unwrap();
             let first_if_block_is_always_true = first_block.condition.is_constant_boolean_true();
