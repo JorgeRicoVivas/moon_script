@@ -210,9 +210,26 @@ pub fn build_ast<'input>(token: Pair<'input, Rule>, base: &Engine, mut context: 
             .collect::<Vec<_>>()
     }).unwrap_or_default();
     let mut statements = statement_parsing::build_token(statements_tokens, base, &mut context)?;
+    replace_last_fn_call_for_return_statement(&mut statements);
 
     let (variables, parameterized_variables) = optimize_variables(&mut context, inlineable_variables, &mut statements);
     Ok(AST { statements, variables, parameterized_variables })
+}
+
+fn replace_last_fn_call_for_return_statement(statements: &mut Vec<Statement>) {
+    if let Some(last_statement) = statements.last_mut() {
+        let is_fn_call = match last_statement {
+            Statement::FnCall(_) => true,
+            _ => false,
+        };
+        if is_fn_call {
+            let fn_call = match mem::replace(last_statement, Statement::ReturnCall(FullValue::Null)) {
+                Statement::FnCall(function) => function,
+                _ => unreachable!()
+            };
+            *last_statement = Statement::ReturnCall(FullValue::Function(fn_call));
+        }
+    }
 }
 
 fn line_and_column_of_token(token: &Pair<Rule>, context: &mut ContextBuilder) -> (usize, usize) {

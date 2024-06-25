@@ -7,7 +7,12 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Corrected wrong order of the Pratt-Parser as it gave wrong precedence on comparisons" />
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="If statement no longer execute it's first block statements when just one predicate is specified">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -105,7 +110,7 @@
       <workItem from="1719323540776" duration="75000" />
       <workItem from="1719324147923" duration="510000" />
       <workItem from="1719324879187" duration="9062000" />
-      <workItem from="1719335123459" duration="2272000" />
+      <workItem from="1719335123459" duration="4349000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -275,7 +280,15 @@
       <option name="project" value="LOCAL" />
       <updated>1719337006099</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="If statement no longer execute it's first block statements when just one predicate is specified">
+      <option name="closed" value="true" />
+      <created>1719339839854</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1719339839854</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -302,6 +315,7 @@
     <MESSAGE value="Fixed fncall not using the object it calls into as first parameter" />
     <MESSAGE value="When using the binary comparators, they inform of the variable contents on runtime" />
     <MESSAGE value="Corrected wrong order of the Pratt-Parser as it gave wrong precedence on comparisons" />
-    <option name="LAST_COMMIT_MESSAGE" value="Corrected wrong order of the Pratt-Parser as it gave wrong precedence on comparisons" />
+    <MESSAGE value="If statement no longer execute it's first block statements when just one predicate is specified" />
+    <option name="LAST_COMMIT_MESSAGE" value="If statement no longer execute it's first block statements when just one predicate is specified" />
   </component>
 </project>

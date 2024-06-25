@@ -27,8 +27,6 @@ mod test {
         return effect.effect.effect.set_color(1,0,0.2);
     "#;
 
-
-
     #[test]
     fn test() {
         let _ = simple_logger::init_with_level(log::Level::Trace);
