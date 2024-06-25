@@ -59,7 +59,7 @@ RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE  }
 
 STATEMENTS = { (WHITE_SPACE* ~
     (WHILE_BLOCK|IF_BLOCK|
-        ((ASSIGNMENT|RETURN_CALL|fncall|property) ~ WHITE_SPACE* ~ ";" ?)
+        ((ASSIGNMENT|RETURN_CALL|fncall|property) ~ WHITE_SPACE* ~ ";"? )
     ))* ~ WHITE_SPACE* }
 BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~ EOI  }
 
