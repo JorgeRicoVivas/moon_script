@@ -142,6 +142,19 @@ pub(crate) fn get_binary_operators() -> Vec<(&'static str, fn(MoonValue, MoonVal
                 _ => return Err("Operator '&&' can only be applied between boolean, integers or decimals".to_string()),
             })
         }),
+        ("||", |arg_1, arg_2| {
+            Ok(match (arg_1, arg_2) {
+                (MoonValue::Boolean(bool_1), MoonValue::Boolean(bool_2)) => {
+                    MoonValue::Boolean(bool_1 || bool_2)
+                }
+                args @ (MoonValue::Decimal(_) | MoonValue::Integer(_), MoonValue::Decimal(_) | MoonValue::Integer(_)) => {
+                    let int_1 = TryInto::<i128>::try_into(args.0).unwrap();
+                    let int_2 = TryInto::<i128>::try_into(args.1).unwrap();
+                    MoonValue::Integer(int_1 | int_2)
+                }
+                _ => return Err("Operator '||' can only be applied between boolean, integers or decimals".to_string()),
+            })
+        }),
         ("^", |arg_1, arg_2| {
             Ok(match (arg_1, arg_2) {
                 (MoonValue::Boolean(bool_1), MoonValue::Boolean(bool_2)) => {
