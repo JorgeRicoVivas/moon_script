@@ -11,7 +11,7 @@ ident = { ASCII_ALPHA ~ (ASCII_ALPHANUMERIC|":"|"_")* }
 fncall_object = { ident }
 fncall_module_name = { ident }
 fncall_function_name = { ident }
-fncall = { (fncall_object ~ ".")? ~ (fncall_module_name ~ "/")? ~ fncall_function_name ~ WHITE_SPACE* ~ "(" ~ WHITE_SPACE* ~ ( VALUE ~ WHITE_SPACE* ~ ("," ~ WHITE_SPACE*)? )* ~ VALUE? ~ WHITE_SPACE* ~ ")" ~ WHITE_SPACE* ~ ";" ? }
+fncall = { (fncall_object ~ ".")? ~ (fncall_module_name ~ "/")? ~ fncall_function_name ~ WHITE_SPACE* ~ "(" ~ WHITE_SPACE* ~ ( VALUE ~ WHITE_SPACE* ~ ("," ~ WHITE_SPACE*)? )* ~ VALUE? ~ WHITE_SPACE* ~ ")" ~ WHITE_SPACE* }
 
 property_params = {
     "("~
@@ -48,16 +48,16 @@ VALUE = { UNARY_OPERATION|ARRAY|BINARY_OPERATION|string|decimal|integer|null|boo
 
 PREDICATE = { VALUE }
 
-ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ (property|ident) ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
+ASSIGNMENT = { ("let" ~ WHITE_SPACE+)? ~ (property|ident) ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ VALUE }
 IF_BLOCK = {
     "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"
     ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "if" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")*
     ~ ( WHITE_SPACE* ~ "else" ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}")?
     }
 WHILE_BLOCK = { "while" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEMENTS ~ "}"}
-RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE ~ (WHITE_SPACE* ~ ";")? }
+RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE  }
 
-STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|ASSIGNMENT|RETURN_CALL|fncall|property))* ~ WHITE_SPACE* }
+STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|(ASSIGNMENT|RETURN_CALL|fncall|property ~ WHITE_SPACE* ~ ";" ?)))* ~ WHITE_SPACE* }
 BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~ EOI  }
 
 
