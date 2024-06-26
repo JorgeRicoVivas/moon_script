@@ -87,11 +87,13 @@ mod test {
             print("Killing");
             effect.kill();
         }
+        6==effect.lived_time
+        8==effect.lived_time
 
 
         "#, context).map_err(|error| panic!("{error}"));
-        //println!("{ast:#?}");
-        println!("{:#?}",ast.unwrap().executor().execute());
+        println!("{ast:#?}");
+        //println!("{:#?}",ast.unwrap().executor().execute());
     }
 }
 

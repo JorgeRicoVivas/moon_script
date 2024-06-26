@@ -210,7 +210,7 @@ pub fn build_ast<'input>(token: Pair<'input, Rule>, base: &Engine, mut context: 
             .map(|(block_0_var_index, variable)| (variable.name.clone(), block_0_var_index))
             .collect::<Vec<_>>()
     }).unwrap_or_default();
-    let mut statements = statement_parsing::build_token(statements_tokens, base, &mut context)?;
+    let mut statements = statement_parsing::build_token(statements_tokens, base, &mut context, true)?;
     replace_last_fn_call_for_return_statement(&mut statements);
 
     let (variables, parameterized_variables) = optimize_variables(&mut context, inlineable_variables, &mut statements);

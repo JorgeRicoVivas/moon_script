@@ -51,13 +51,13 @@ fn walk_value<Action: FnMut(WalkInput)>(action: &mut Action, value: &mut FullVal
     }
 }
 
-pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
+pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, is_last_token: bool) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
     let token_str = token.as_str();
     let line_and_column = parsing::line_and_column_of_token(&token, context);
     log::trace!("Parsing staement rule {:?} with contents: {}", token.as_rule(), token.as_str());
     match token.as_rule() {
         Rule::STATEMENTS => {
-            parse_statements(token, base, context)
+            parse_statements(token, base, context, true)
         }
         Rule::WHILE_BLOCK => {
             let mut pairs = token.into_inner();
@@ -67,7 +67,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
             let predicate = build_value_token(predicate_pair, base, context).add_where_error(predicate_str, line_and_column)?;
             context.permit_variables_to_inline();
             context.push_block_level();
-            let statements = parse_statements(pairs.next().unwrap(), base, context)?;
+            let statements = parse_statements(pairs.next().unwrap(), base, context, false)?;
             context.pop_block_level();
             Ok(vec![Statement::WhileBlock { condition: predicate, statements }])
         }
@@ -89,7 +89,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                         context.push_block_level();
                         parsed_statements.push(ConditionalStatements {
                             condition: FullValue::from(MoonValue::Boolean(true)),
-                            statements: parse_statements(current_token, base, context)?,
+                            statements: parse_statements(current_token, base, context, false)?,
                         });
                         context.pop_block_level();
                         break;
@@ -103,7 +103,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                     parsed_statements.push(ConditionalStatements { condition: predicate, statements: Vec::new() })
                 } else {
                     context.push_block_level();
-                    let statements = parse_statements(current_token, base, context)?;
+                    let statements = parse_statements(current_token, base, context, false)?;
                     parsed_statements.last_mut().unwrap().statements.extend(statements);
                     context.pop_block_level();
                 }
@@ -206,30 +206,31 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                 }
             })
         }
-        Rule::property => {
-            let prop = value_parsing::parse_property(token, base, context, Some("set_"), None)
-                .add_where_error(token_str, line_and_column)?;
-            match prop {
-                FullValue::Function(function) => {
-                    Ok(vec![Statement::FnCall(function)])
-                }
-                _ => Ok(Vec::new()),
-            }
-        }
-        Rule::VALUE=>{
+        Rule::VALUE => {
             let value = build_value_token(token, base, context)?;
-            Ok(vec![Statement::ReturnCall(value)])
+            if is_last_token {
+                Ok(vec![Statement::ReturnCall(value)])
+            } else if let Some(function) = match value {
+                FullValue::Function(function) => Some(function),
+                _ => None
+            } {
+                Ok(vec![Statement::FnCall(function)])
+            } else {
+                Ok(Vec::new())
+            }
         }
         _ => { unreachable!("Shouldn't have found a rule of type: {:?}={}", token.as_rule(), token.as_str()) }
     }
 }
 
-fn parse_statements<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
+fn parse_statements<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, last_statement_is_final_statement: bool) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
     let mut errors = Vec::new();
-    let statements = token.into_inner().map(|token| {
+    let statements_token = token.into_inner();
+    let last_token_index = statements_token.len().checked_sub(1).unwrap_or(0);
+    let statements = statements_token.enumerate().map(|(token_number, token)| {
         let token_str = token.as_str();
         let line_and_column = parsing::line_and_column_of_token(&token, context);
-        build_token(token, base, context).add_where_error(token_str, line_and_column)
+        build_token(token, base, context, last_statement_is_final_statement && last_token_index == token_number).add_where_error(token_str, line_and_column)
     })
         .on_errors(|error| errors.extend(error))
         .flat_map(|statements| statements)
