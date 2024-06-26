@@ -216,6 +216,10 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                 _ => Ok(Vec::new()),
             }
         }
+        Rule::VALUE=>{
+            let value = build_value_token(token, base, context)?;
+            Ok(vec![Statement::ReturnCall(value)])
+        }
         _ => { unreachable!("Shouldn't have found a rule of type: {:?}={}", token.as_rule(), token.as_str()) }
     }
 }

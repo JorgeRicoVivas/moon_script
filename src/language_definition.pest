@@ -44,7 +44,7 @@ BINARY_OPERATION = {
     )
 }
 
-VALUE = { BINARY_OPERATION|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident }
+VALUE = { "("~VALUE~")"|BINARY_OPERATION|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident }
 
 PREDICATE = { VALUE }
 
@@ -58,7 +58,7 @@ WHILE_BLOCK = { "while" ~ WHITE_SPACE+ ~ PREDICATE ~ WHITE_SPACE* ~ "{" ~ STATEM
 RETURN_CALL = { "return" ~ WHITE_SPACE+ ~ VALUE  }
 
 STATEMENTS = { (WHITE_SPACE* ~ (WHILE_BLOCK|IF_BLOCK|((ASSIGNMENT|RETURN_CALL|fncall|property) ~ WHITE_SPACE* ~ ";"? )))* ~ WHITE_SPACE* }
-BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~ EOI  }
+BASE_STATEMENTS = { SOI ~ WHITE_SPACE* ~ STATEMENTS ~ WHITE_SPACE* ~(VALUE ~ WHITE_SPACE*)? ~ EOI  }
 
 
 and = {"&&"}
