@@ -20,18 +20,33 @@ pub mod value;
 
 #[cfg(test)]
 mod test {
+    use log::Level;
     use crate::engine::context::ContextBuilder;
     use crate::engine::Engine;
+
+    #[test]
+    fn test_precedence() {
+        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+        let engine = Engine::default();
+        let expected = 2 * 3 + 5 > 4 && true;
+        let moon_result : bool = engine.parse("2 * 3 + 5 > 4 && true", Default::default())
+            .unwrap().executor().execute().unwrap().try_into().unwrap();
+        assert_eq!(expected, moon_result);
+
+        let expected = true && 4 < 5 + 3 * 2;
+        let moon_result : bool = engine.parse("true && 4 < 5 + 3 * 2", Default::default())
+            .unwrap().executor().execute().unwrap().try_into().unwrap();
+        assert_eq!(expected, moon_result);
+    }
 
     const INPUT: &str = r#"
         return effect.effect.effect.set_color(1,0,0.2);
     "#;
 
 
-
     #[test]
-    fn test() {
-        //let _ = simple_logger::init_with_level(log::Level::Trace);
+    fn unnamed_test() {
+        let _ = simple_logger::init_with_level(log::Level::Trace);
 
         let mut engine = Engine::default();
         let mut context = ContextBuilder::default();
@@ -47,7 +62,7 @@ mod test {
             .lazy_value(|| true));
 
 
-        engine.add_function(crate::parsing::FunctionDefinition::new("alt", |()| 1)
+        engine.add_function(crate::parsing::FunctionDefinition::new("alt", |()| 0)
             .associated_type_name("agent").knwon_return_type_name("int"));
         engine.add_function(crate::parsing::FunctionDefinition::new("is_flag", |()| false)
             .associated_type_name("agent").knwon_return_type_name("bool"));
@@ -57,18 +72,18 @@ mod test {
                                                                     |(), _scale: f32| {}, )
             .associated_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("lived_time",
-                                                                    |()| {3}, )
+                                                                    |()| { 3 }, )
             .associated_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("set_pos",
                                                                     |(), _x: f32, _y: f32, _z: f32| {},
         ).associated_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("set_color",
                                                                     |(), x: f32, y: f32, z: f32| {
-                                                                        x+y+z
+                                                                        x + y + z
                                                                     },
         ).associated_type_name("effect"));
 
-        engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()|println!("Internal killing"))
+        engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()| println!("Internal killing"))
             .associated_type_name("effect").knwon_return_type_name("effect"));
 
 
@@ -82,18 +97,12 @@ mod test {
         */
 
         let ast = engine.parse(r#"
-        let should_kill = !agent.is_flag() && effect.lived_time > 5;
-        if should_kill {
-            print("Killing");
-            effect.kill();
-        }
-        6==effect.lived_time
-        8==effect.lived_time
+        agent.alt%2==1
 
 
         "#, context).map_err(|error| panic!("{error}"));
         println!("{ast:#?}");
-        //println!("{:#?}",ast.unwrap().executor().execute());
+        println!("{:#?}", ast.unwrap().executor().execute());
     }
 }
 

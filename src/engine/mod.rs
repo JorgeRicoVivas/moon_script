@@ -39,8 +39,7 @@ pub struct Engine {
 impl Default for Engine {
     fn default() -> Self {
         let sums_ops = Op::infix(Rule::sum, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left);
-        let mul_ops = Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left);
-        let rem_op = Op::infix(Rule::rem, Assoc::Left);
+        let mul_ops = Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left) | Op::infix(Rule::rem, Assoc::Left);
         let comparators_ops = Op::infix(Rule::eq, Assoc::Left) | Op::infix(Rule::neq, Assoc::Left)
             | Op::infix(Rule::gt, Assoc::Left) | Op::infix(Rule::gte, Assoc::Left)
             | Op::infix(Rule::lt, Assoc::Left) | Op::infix(Rule::lte, Assoc::Left);
@@ -65,7 +64,6 @@ impl Default for Engine {
                 .op(logic_gate_comparators)
                 .op(comparators_ops)
                 .op(sums_ops)
-                .op(rem_op)
                 .op(mul_ops)
             ,
             constants: Default::default(),
