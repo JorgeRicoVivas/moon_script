@@ -43,6 +43,26 @@ mod test {
         return effect.effect.effect.set_color(1,0,0.2);
     "#;
 
+    #[test]
+    fn test_binary_comparator_and_unary(){
+        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+        let mut engine = Engine::default();
+        engine.add_function(crate::parsing::FunctionDefinition::new("is_flag", |()| false)
+            .associated_type_name("agent").knwon_return_type_name("bool"));
+        engine.add_function(crate::parsing::FunctionDefinition::new("get_bool", |()| false)
+            .associated_type_name("agent").knwon_return_type_name("bool"));
+
+        let mut context = ContextBuilder::default();
+        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("agent")
+            .associated_type("agent")
+            .lazy_value(|| 46397));
+
+        engine.parse(r#"print("Should not be true: "+(!agent.is_flag() && agent.get_bool())); "#, context)
+            .unwrap().executor().execute().expect("TODO: panic message");
+
+
+    }
+
 
     #[test]
     fn unnamed_test() {

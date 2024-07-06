@@ -22,7 +22,7 @@ property = { ident ~ (WHITE_SPACE* ~ "." ~ WHITE_SPACE* ~ ident ~ WHITE_SPACE* ~
 
 unary_operator = { ("!"|"-") }
 
-UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ VALUE }
+UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident) }
 
 //binary operator cannot self-chain
 BINARY_OPERATION = {
