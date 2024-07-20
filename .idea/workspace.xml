@@ -7,10 +7,8 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Corrected operator precedence">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Corrected unary operator grouping binary operators even when no parenthesis is indicated">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/language_definition.pest" beforeDir="false" afterPath="$PROJECT_DIR$/src/language_definition.pest" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -155,7 +153,7 @@
       <workItem from="1719401295553" duration="3533000" />
       <workItem from="1719409721910" duration="36000" />
       <workItem from="1720266348993" duration="1017000" />
-      <workItem from="1720269023009" duration="684000" />
+      <workItem from="1720269023009" duration="1994000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -389,7 +387,15 @@
       <option name="project" value="LOCAL" />
       <updated>1720267029377</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="Corrected unary operator grouping binary operators even when no parenthesis is indicated">
+      <option name="closed" value="true" />
+      <created>1720271665568</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1720271665568</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -397,7 +403,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
-    <MESSAGE value="Moved value to an individual module" />
     <MESSAGE value="Renamed VBValue to MoonValue" />
     <MESSAGE value="ParsingError can now turn into SimpleError" />
     <MESSAGE value="No longer using Rc but Arc instead" />
@@ -422,7 +427,8 @@
     <MESSAGE value="fncall and predicate no longer are part of STATEMENTS, as VALUE already contains them" />
     <MESSAGE value="UnaryOperator takes as argument another value, rather than expansion of values" />
     <MESSAGE value="Corrected operator precedence" />
-    <option name="LAST_COMMIT_MESSAGE" value="Corrected operator precedence" />
+    <MESSAGE value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
+    <option name="LAST_COMMIT_MESSAGE" value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

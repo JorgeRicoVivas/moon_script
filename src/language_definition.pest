@@ -31,7 +31,7 @@ BINARY_OPERATION = {
         ~ WHITE_SPACE* ~
         (
             WHITE_SPACE* ~
-            (sum|sub|mul|div|rem|and|or|xor|slf|srg|eq|neq|gt|lt|gte|lte)
+            (sum|sub|mul|div|rem|and|or|xor|slf|srg|eq|neq|gte|lte|gt|lt)
             ~ WHITE_SPACE* ~
             (
                 "("~(UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)~")"
@@ -75,7 +75,7 @@ rem = {"%"}
 
 eq = {"=="}
 neq = {"!="}
-gt = {">"}
-lt = {"<"}
 gte = {">="}
 lte = {"<="}
+gt = {">"}
+lt = {"<"}
