@@ -1,7 +1,7 @@
-use alloc::{format, vec};
 use alloc::collections::VecDeque;
 use alloc::string::ToString;
 use alloc::vec::Vec;
+use alloc::{format, vec};
 use core::mem;
 use core::str::FromStr;
 
@@ -12,9 +12,10 @@ use crate::engine::context::ContextBuilder;
 use crate::engine::Engine;
 use crate::execution::ASTFunction;
 use crate::external_utils::on_error_iter::IterOnError;
+use crate::function::ToAbstractFunction;
 use crate::parsing::error::ASTBuildingError;
-use crate::parsing::Rule;
-use crate::value::FullValue;
+use crate::parsing::{FunctionInfo, Rule};
+use crate::value::{FullValue, MoonValue};
 
 pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder) -> Result<FullValue, Vec<SimpleError<'input>>> {
     while token.as_rule().eq(&Rule::VALUE) {
@@ -73,6 +74,30 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                 FullValue::Function(ASTFunction { function: function.function.clone(), args: vec![value] })
             })
         }
+        Rule::ARRAY_ACCESS => {
+            let mut token = token.into_inner();
+            let mut value = build_value_token(token.next().unwrap(), base, context)?;
+            for index_token in token.into_iter() {
+                let index = usize::from_str(index_token.as_str())
+                    .map_err(|_| vec![ASTBuildingError::CannotParseInteger { value: index_token.as_str(), lower_bound: usize::MIN as i128, upper_bound: usize::MAX as i128 }
+                        .into()])?;
+                let array_access_function = FunctionInfo {
+                    can_inline_result: true,
+                    function: (|moon_value: MoonValue, index: usize| ->Result<MoonValue, String> {
+                        match moon_value {
+                            MoonValue::Array(array) => array
+                                .get(index)
+                                .ok_or(format!("Index {index} it's out of bounds for array of length {}", array.len()))
+                                .cloned(),
+                            value => Err(format!("Tried accessing an index of an Array, while value is not an array, (Value: {value:?})"))
+                        }
+                    }).abstract_function(),
+                    return_type_name: None,
+                };
+                value = decompress_function("array_access", vec![value, FullValue::from(MoonValue::from(index))], &array_access_function)?;
+            }
+            Ok(value)
+        }
         Rule::ARRAY => {
             let mut errors = Vec::new();
             let res = token.into_inner().map(|pair| build_value_token(pair, base, context))
@@ -101,7 +126,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                             .associated_type_name.clone()
                             .ok_or_else(|| vec![ASTBuildingError::CouldntInlineVariableOfUnknownType { variable_name: current_token_as_str }.into()])?
                         );
-                        object = Some(FullValue::Variable {block_level:variable_object.0, var_index:variable_object.1});
+                        object = Some(FullValue::Variable { block_level: variable_object.0, var_index: variable_object.1 });
                     }
                     Rule::fncall_module_name => module = Some(current_token_as_str),
                     Rule::fncall_function_name => {
@@ -115,19 +140,12 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                 .map(|argument| build_value_token(argument, base, context))
                 .on_errors(|error| errors.extend(error.into_iter()))
                 .collect::<Vec<_>>();
-            if let Some(variable) = object{
+            if let Some(variable) = object {
                 args.insert(0, variable);
             }
-
             let function = base.find_function(object_type.clone(), module, function_name)
                 .ok_or_else(|| vec![ASTBuildingError::FunctionNotFound { function_name, associated_to_type: object_type.clone(), module }.into()])?;
-            Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
-                let inlined_res = function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
-                    .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineFunction { function_name, runtime_error }.into()])?;
-                FullValue::from(inlined_res)
-            } else {
-                FullValue::Function(ASTFunction { function: function.function.clone(), args })
-            })
+            Ok(decompress_function(function_name, args, function)?)
         }
         Rule::ident => {
             let ident = token.as_str();
@@ -160,6 +178,16 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
     };
     log::trace!("Parsed token {token_rule:?} = {token_str} into value {res:?}");
     res
+}
+
+fn decompress_function<'fn_name, 'fn_info>(function_name: &'fn_name str, mut args: Vec<FullValue>, function: &'fn_info FunctionInfo) -> Result<FullValue, Vec<SimpleError<'fn_name>>> {
+    Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
+        let inlined_res = function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
+            .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineFunction { function_name, runtime_error }.into()])?;
+        FullValue::from(inlined_res)
+    } else {
+        FullValue::Function(ASTFunction { function: function.function.clone(), args })
+    })
 }
 
 //noinspection RsBorrowChecker

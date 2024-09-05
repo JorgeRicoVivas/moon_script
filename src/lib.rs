@@ -23,6 +23,23 @@ mod test {
     use log::Level;
     use crate::engine::context::ContextBuilder;
     use crate::engine::Engine;
+    use crate::value::MoonValue;
+
+    #[test]
+    fn test_array() {
+        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+        let engine = Engine::default();
+
+        let ast = engine.parse("let a = [[4 2 5] [3 9 1] [6 8 7]]; a[1][2]", Default::default())
+            .unwrap();
+        let moon_result : i32 = ast.executor().execute().unwrap().try_into().unwrap();
+
+        let rust_executed = (||{
+            let a = [[4,2,5],[3,9,1],[6,8,7]];
+            a[1][2]
+        })();
+        assert_eq!(rust_executed, moon_result);
+    }
 
     #[test]
     fn test_precedence() {

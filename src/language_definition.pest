@@ -22,21 +22,21 @@ property = { ident ~ (WHITE_SPACE* ~ "." ~ WHITE_SPACE* ~ ident ~ WHITE_SPACE* ~
 
 unary_operator = { ("!"|"-") }
 
-UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident) }
+UNARY_OPERATION= { unary_operator ~ WHITE_SPACE* ~ ("("~VALUE~")"|UNARY_OPERATION|ARRAY_ACCESS|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident) }
 
 //binary operator cannot self-chain
 BINARY_OPERATION = {
     (
-        ("("~VALUE~")"|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
+        ("("~VALUE~")"|UNARY_OPERATION|ARRAY_ACCESS|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
         ~ WHITE_SPACE* ~
         (
             WHITE_SPACE* ~
             (sum|sub|mul|div|rem|and|or|xor|slf|srg|eq|neq|gte|lte|gt|lt)
             ~ WHITE_SPACE* ~
             (
-                "("~(UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)~")"
+                "("~(UNARY_OPERATION|ARRAY_ACCESS|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)~")"
                 |
-                (UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
+                (UNARY_OPERATION|ARRAY_ACCESS|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident)
                 |
                 "("~(BINARY_OPERATION)~")"
             )
@@ -44,7 +44,10 @@ BINARY_OPERATION = {
     )
 }
 
-VALUE = { "("~VALUE~")"|BINARY_OPERATION|UNARY_OPERATION|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident }
+ARRAY_INDEX = { ASCII_DIGIT+ }
+ARRAY_ACCESS = { ( ARRAY | ident | property|fncall ) ~ ("[" ~ ARRAY_INDEX ~ "]")+ }
+
+VALUE = { "("~VALUE~")"|BINARY_OPERATION|UNARY_OPERATION|ARRAY_ACCESS|ARRAY|string|decimal|integer|null|boolean|property|fncall|ident }
 
 PREDICATE = { VALUE }
 
