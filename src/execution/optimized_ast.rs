@@ -89,6 +89,7 @@ struct OptimizedRuntimeVariable {
     value: OptimizedVariable,
 }
 
+/// Compiled Script and using avoiding chained indirections to improve performance.
 #[derive(Debug, Clone, Default)]
 pub struct OptimizedAST {
     variables: Vec<OptimizedRuntimeVariable>,
@@ -180,16 +181,27 @@ impl OptimizedAST {
         MultiDirection { start, len: values_len }
     }
 
+    /// Gets an executor for this script, from this executor you can both give input variables and
+    /// execute it afterward.
     pub fn executor(&self) -> OptimizedASTExecutor<'_> {
         OptimizedASTExecutor::new(self)
     }
+
+    /// Executes the script withouth any input variables, if you want to specify them, get its
+    /// [Self::executor] and push variables to it with [OptimizedASTExecutor::push_variable] before
+    /// calling [OptimizedASTExecutor::execute].
+    pub fn execute(&self) -> Result<MoonValue, RuntimeError> {
+        self.executor().execute()
+    }
 }
 
-
+#[derive(Clone)]
 struct OptimizedExecutingContext {
     variables: Vec<OptimizedRuntimeVariable>,
 }
 
+/// Allows to execute an AST contents and to also push input variables.
+#[derive(Clone)]
 pub struct OptimizedASTExecutor<'ast> {
     ast: &'ast OptimizedAST,
     context: OptimizedExecutingContext,
@@ -200,6 +212,8 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         Self { ast, context: OptimizedExecutingContext { variables: ast.variables.clone() } }
     }
 
+    /// Pushes a variable to this executor, if it is possible, it's preferred for you to push
+    /// variables either as constants on the [crate::Engine], or in the [crate::ContextBuilder].
     pub fn push_variable<Variable: Into<MoonValue>>(mut self, name: &str, variable: Variable) -> Self {
         if let Some(variable_index) = self.ast.parameterized_variables.get(name) {
             self.context.variables[*variable_index] = OptimizedRuntimeVariable { value: OptimizedVariable::Value(variable.into().into()) };
@@ -207,6 +221,7 @@ impl<'ast> OptimizedASTExecutor<'ast> {
         self
     }
 
+    /// Executes the AST.
     pub fn execute(mut self) -> Result<MoonValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&self.ast.blocks[block], &self.ast)? {

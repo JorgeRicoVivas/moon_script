@@ -14,11 +14,18 @@ use crate::value::FullValue;
 pub mod optimized_ast;
 pub mod ast;
 
+/// An error occurred when running a script
 #[derive(Debug)]
 pub enum RuntimeError {
-    CannotTurnPredicateToBool { type_of_statement: &'static str, function_error_message: String },
+    /// A function returned [Result::<_, String>::Err], being this is string an error message that
+    /// is returned in 'function_error_message'.
     FunctionError { function_error_message: String },
+    /// A predicate couldn't be calculated, this is the same as a [RuntimeError::FunctionError], but
+    /// specific for 'if' and 'while' predicates.
+    CannotTurnPredicateToBool { type_of_statement: &'static str, function_error_message: String },
+    /// An argument to a function couldn't be parsed as a [crate::MoonValue].
     CannotParseArgument,
+    /// A function tried to run, but an argument was missing.
     AnArgumentIsMissing,
 }
 
@@ -41,21 +48,21 @@ impl SimpleErrorDetail for RuntimeError {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ASTFunction {
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ASTFunction {
     pub(crate) function: MoonFunction,
     pub(crate) args: Vec<FullValue>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ConditionalStatements {
     pub(crate) condition: FullValue,
     pub(crate) statements: Vec<Statement>,
 }
 
 
-#[derive(Debug, Clone)]
-pub struct RuntimeVariable {
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct RuntimeVariable {
     pub(crate) value: FullValue,
 }
 

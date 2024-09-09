@@ -1,8 +1,28 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-pub extern crate pest;
+extern crate pest;
 
+pub use engine::context::ContextBuilder;
+pub use engine::context::InputVariable;
+pub use engine::Constant;
+pub use engine::Engine;
+
+pub use execution::ast::ASTExecutor;
+pub use execution::ast::AST;
+pub use execution::RuntimeError;
+
+pub use execution::optimized_ast::OptimizedAST;
+pub use execution::optimized_ast::OptimizedASTExecutor;
+
+pub use function::ToAbstractFunction;
+
+pub use parsing::error::ASTBuildingError;
+pub use parsing::error::ParsingError;
+pub use parsing::FunctionDefinition;
+pub use parsing::MoonValueKind;
+
+pub use value::MoonValue;
 
 #[cfg(feature = "std")]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
@@ -20,22 +40,79 @@ pub mod value;
 
 #[cfg(test)]
 mod test {
-    use log::Level;
     use crate::engine::context::ContextBuilder;
     use crate::engine::Engine;
-    use crate::value::MoonValue;
+    use crate::{FunctionDefinition, InputVariable};
+    use log::Level;
+
+    #[test]
+    fn test_optimizations() {
+        let mut engine = Engine::new();
+        engine.add_constant("ONE_AS_CONSTANT", 1);
+        engine.add_function(FunctionDefinition::new("constant_fn_get_two", || { 2 }).inline());
+        let context_with_a_constant_input_variable = ContextBuilder::new()
+            .with_variable(InputVariable::new("four").value(4));
+
+        let unoptimized_script_source = r###"
+            let three = ONE_AS_CONSTANT + constant_fn_get_two();
+            if three == 3{
+                print("First line!");
+            } else if three!=3 {
+                print("How?");
+            } else {
+                print("This won't ever happen 1");
+            }
+            if three!=3 {
+                print("This wont ever happen either 1");
+            } else {
+                print("Second line!");
+            }
+            if four == 4 {
+                print("Third line!");
+            } else if four!=4 {
+                print("How?");
+            } else {
+                print("This won't ever happen 2");
+            }
+            if four!=4 {
+                print("This wont ever happen either 2");
+            } else {
+                print("Fourth line!");
+            }
+            while three == 3 {
+                print("Eternal loop!");
+            }
+        "###;
+
+        let optimized_script_source = r###"
+            print("First line!");
+            print("Second line!");
+            print("Third line!");
+            print("Fourth line!");
+            while true {
+                print("Eternal loop!");
+            }
+        "###;
+
+        let ast_from_optimized = Engine::new()
+            .parse(optimized_script_source, context_with_a_constant_input_variable.clone()).unwrap();
+        let ast_from_unoptimized = engine
+            .parse(unoptimized_script_source, context_with_a_constant_input_variable.clone()).unwrap();
+
+        assert_eq!(ast_from_optimized, ast_from_unoptimized);
+    }
 
     #[test]
     fn test_array() {
-        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+        simple_logger::init_with_level(Level::Trace);
         let engine = Engine::default();
 
         let ast = engine.parse("let a = [[4 2 5] [3 9 1] [6 8 7]]; a[1][2]", Default::default())
             .unwrap();
-        let moon_result : i32 = ast.executor().execute().unwrap().try_into().unwrap();
+        let moon_result: i32 = ast.executor().execute().unwrap().try_into().unwrap();
 
-        let rust_executed = (||{
-            let a = [[4,2,5],[3,9,1],[6,8,7]];
+        let rust_executed = (|| {
+            let a = [[4, 2, 5], [3, 9, 1], [6, 8, 7]];
             a[1][2]
         })();
         assert_eq!(rust_executed, moon_result);
@@ -43,66 +120,58 @@ mod test {
 
     #[test]
     fn test_precedence() {
-        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+        simple_logger::init_with_level(Level::Trace);
         let engine = Engine::default();
         let expected = 2 * 3 + 5 > 4 && true;
-        let moon_result : bool = engine.parse("2 * 3 + 5 > 4 && true", Default::default())
+        let moon_result: bool = engine.parse("2 * 3 + 5 > 4 && true", Default::default())
             .unwrap().executor().execute().unwrap().try_into().unwrap();
         assert_eq!(expected, moon_result);
 
         let expected = true && 4 < 5 + 3 * 2;
-        let moon_result : bool = engine.parse("true && 4 < 5 + 3 * 2", Default::default())
+        let moon_result: bool = engine.parse("true && 4 < 5 + 3 * 2", Default::default())
             .unwrap().executor().execute().unwrap().try_into().unwrap();
         assert_eq!(expected, moon_result);
     }
 
-    const INPUT: &str = r#"
-        return effect.effect.effect.set_color(1,0,0.2);
-    "#;
-
     #[test]
-    fn test_binary_comparator_and_unary(){
-        simple_logger::init_with_level(Level::Trace).expect("TODO: panic message");
+    fn test_binary_comparator_and_unary() {
+        simple_logger::init_with_level(Level::Trace);
         let mut engine = Engine::default();
-        engine.add_function(crate::parsing::FunctionDefinition::new("is_flag", |()| false)
-            .associated_type_name("agent").knwon_return_type_name("bool"));
+        engine.add_function(FunctionDefinition::new("is_flag", |()| false)
+            .associated_type_name("agent").known_return_type_name("bool"));
         engine.add_function(crate::parsing::FunctionDefinition::new("get_bool", |()| false)
-            .associated_type_name("agent").knwon_return_type_name("bool"));
+            .associated_type_name("agent").known_return_type_name("bool"));
 
         let mut context = ContextBuilder::default();
-        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("agent")
+        context.push_variable(crate::engine::context::InputVariable::new("agent")
             .associated_type("agent")
             .lazy_value(|| 46397));
 
         engine.parse(r#"print("Should not be true: "+(!agent.is_flag() && agent.get_bool())); "#, context)
             .unwrap().executor().execute().expect("TODO: panic message");
-
-
     }
 
-
     #[test]
-    fn unnamed_test() {
+    fn test_custom_unnamed_type() {
         let _ = simple_logger::init_with_level(log::Level::Trace);
 
         let mut engine = Engine::default();
         let mut context = ContextBuilder::default();
-        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("agent")
-            .associated_type("agent")
-            .lazy_value(|| 46397));
-        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("effect")
-            .associated_type("effect")
-            .lazy_value(|| 377397));
+        context.push_variable(crate::engine::context::InputVariable::new("agent")
+            .lazy_value(|| 46397)
+            .associated_type("agent"));
+        context.push_variable(crate::engine::context::InputVariable::new("effect")
+            .lazy_value(|| 377397)
+            .associated_type("effect"));
 
-        context.push_variable(crate::engine::context::CompiletimeVariableInformation::new("forced_true")
+        context.push_variable(crate::engine::context::InputVariable::new("forced_true")
             .associated_type("boolean")
             .lazy_value(|| true));
 
-
         engine.add_function(crate::parsing::FunctionDefinition::new("alt", |()| 0)
-            .associated_type_name("agent").knwon_return_type_name("int"));
+            .associated_type_name("agent").known_return_type_name("int"));
         engine.add_function(crate::parsing::FunctionDefinition::new("is_flag", |()| false)
-            .associated_type_name("agent").knwon_return_type_name("bool"));
+            .associated_type_name("agent").known_return_type_name("bool"));
 
 
         engine.add_function(crate::parsing::FunctionDefinition::new("set_scale",
@@ -121,17 +190,9 @@ mod test {
         ).associated_type_name("effect"));
 
         engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()| println!("Internal killing"))
-            .associated_type_name("effect").knwon_return_type_name("effect"));
-
-
+            .associated_type_name("effect").known_return_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("effect", |()| 1)
-            .associated_type_name("effect").knwon_return_type_name("effect"));
-
-        /*
-        let ast = engine.parse(INPUT, context).map_err(|error| panic!("{error}"));
-        println!("{ast:#?}");
-        println!("{:#?}",ast.unwrap().executor().execute());
-        */
+            .associated_type_name("effect").known_return_type_name("effect"));
 
         let ast = engine.parse(r#"
         agent.alt%2==1
@@ -145,373 +206,3 @@ mod test {
 
 
 
-/*
-
-pub const FUNCTION_ELEMENTS_LEN: usize = 4;
-
-static mut NUM_A: u128 = 15;
-static mut NUM_B: u128 = 157;
-
-
-#[test]
-fn real_test() {
-    main();
-}
-
-fn main() {
-    simple_logger::init_with_level(log::Level::Trace);
-    println!("Start");
-    let mut base = Base::default();
-
-    base.add_constant("MY_CONST", 5);
-
-
-    base.add_function(FunctionDefinition::new("object_function", || VBValue::Boolean(true))
-        .knwon_return_type_name("boolean").associated_type_name("MyCustomType").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("function", || VBValue::Boolean(true))
-        .knwon_return_type_name("boolean").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("get_asocA", || unsafe { NUM_A })
-        .knwon_return_type_name("int").associated_type_name("int").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("get_asocB", || unsafe { NUM_B })
-        .knwon_return_type_name("int").associated_type_name("int").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("set_asocA",
-                                              |mut values: Vec<u8>| -> Result<(), String> {
-                                                  unsafe {
-                                                      if values.len() < 1 { return Err("Expected at least one parameter".to_string()); }
-                                                      NUM_A = values.swap_remove(0).try_into().map_err(|_| "Error value was not a number".to_string())?;
-                                                      Ok(().into())
-                                                  }
-                                              })
-        .knwon_return_type_name("int").associated_type_name("int").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("set_asocB",
-                                              |mut values: Vec<u8>| -> Result<(), String> {
-                                                  unsafe {
-                                                      if values.len() < 1 { return Err("Expected at least one parameter".to_string()); }
-                                                      NUM_B = values.swap_remove(0).try_into().map_err(|_| "Error value was not a number".to_string())?;
-                                                      Ok(().into())
-                                                  }
-                                              })
-        .knwon_return_type_name("int").associated_type_name("int").module_name("Mod"));
-
-    base.add_function(FunctionDefinition::new("get_asocA", || unsafe { NUM_A })
-        .knwon_return_type_name("int").associated_type_name("my_custom_type").module_name("Mod"));
-    base.add_function(FunctionDefinition::new("set_asocB",
-                                              |mut values: Vec<u8>| -> Result<(), String> {
-                                                  unsafe {
-                                                      if values.len() < 1 { return Err("Expected at least one parameter".to_string()); }
-                                                      NUM_B = values.swap_remove(0).try_into().map_err(|_| "Error value was not a number".to_string())?;
-                                                      Ok(().into())
-                                                  }
-                                              })
-        .knwon_return_type_name("int").associated_type_name("my_custom_type").module_name("Mod"));
-
-
-    base.add_function(FunctionDefinition::new("get_val", || 123890));
-    base.add_function(FunctionDefinition::new("get_asocA", || 12).associated_type_name("my_custom_type"));
-
-    let base = base;
-
-    let mut context = ContextBuilder::default();
-    /*
-    context.push_variable(CompiletimeVariableInformation::new("first_var").value(5020));
-    context.push_variable(CompiletimeVariableInformation::new("ident").value(2050).associated_type("MyCustomType"));
-    context.push_variable(CompiletimeVariableInformation::new("d").associated_type("my_custom_type"));
-    context.push_variable(CompiletimeVariableInformation::new("e").associated_type("my_custom_type"));
-    context.push_variable(CompiletimeVariableInformation::new("f").associated_type("my_custom_type"));
-    context.push_variable(CompiletimeVariableInformation::new("g").associated_type("int"));
-
-    */
-
-    context.push_variable(CompiletimeVariableInformation::new("lazy").associated_type("my_custom_type").lazy_value(|| {
-        14
-    }));
-
-    /*
-    let array_input = "[ null empty false true !true yes no 3 1.5 .75 \"Text\" ident function( 1 2 3 ) ident.object_function( 1 5 ) [1 2 3] [[1 2 3][4 5 6][7 8 9]] ---ident 1+(2*3)+4 ]";
-    let array_input = "[2*((1+2)*(3+4))/5  3]";
-    let array_input = "[5/2 + 8/4]";
-    let successful_parse = SimpleParser::parse(Rule::ARRAY, array_input)
-        .unwrap()
-        .next()
-        .unwrap();
-
-    if successful_parse.as_str().len() < array_input.len() {
-        println!("Wrong parse");
-        return;
-    }
-    println!("{successful_parse:#?}");
-
-    let values = successful_parse.into_inner().map(|pair| {
-        value_parsing::build_value_token(pair, &base, &mut context)
-    }).collect::<Vec<_>>();
-    */
-
-    let parsed = base.parse(INPUT, context
-        .clone()
-        .with_start_parsing_position_offset(3, 10)
-        .with_parsing_column_fixed(true),
-    );
-    if parsed.is_err() {
-        panic!("Err:\n{}", parsed.err().unwrap());
-    }
-    let res = parsed.unwrap();
-    println!("{res:#?}");
-
-    let optimized_ast = res.clone().to_optimized_ast();
-    let optimized_executor = optimized_ast.executor();
-
-    println!("{:?}", optimized_executor.execute());
-
-    test_speed(res.clone(), optimized_ast.clone());
-    test_speed(res.clone(), optimized_ast.clone());
-}
-
-fn test_speed(res: AST, optimized_ast: OptimizedAST) {
-    const MINIMUM_TO_COUNT: i32 = 10;
-    const REPS: i32 = MINIMUM_TO_COUNT + (20000);
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let now = Instant::now();
-        let _execution_res = res.executor()
-            .push_variable("d", 1)
-            .push_variable("e", 2)
-            .push_variable("f", 3)
-            .push_variable("lazy", 3)
-            .execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Standard avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let executor = res.executor()
-            .push_variable("d", 1)
-            .push_variable("e", 2)
-            .push_variable("f", 3)
-            .push_variable("lazy", 3);
-        let now = Instant::now();
-        let _execution_res = executor.execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Only exec avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let now = Instant::now();
-        let _execution_res = optimized_ast.executor()
-            .push_variable("d", 1)
-            .push_variable("e", 2)
-            .push_variable("f", 3)
-            .push_variable("lazy", 3)
-            .execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Standard optimized avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let executor = optimized_ast.executor()
-            .push_variable("d", 1)
-            .push_variable("e", 2)
-            .push_variable("f", 0.3)
-            .push_variable("lazy", 3);
-        let now = Instant::now();
-        let _execution_res = executor.execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-
-
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Only exec optimized avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let now = Instant::now();
-        let _execution_res = optimized_ast.executor().execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Standard optimized no variables avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-
-    let optimized_ast = Box::new(optimized_ast);
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let now = Instant::now();
-        let _execution_res = optimized_ast.executor().execute();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Standard optimized no variables but Box avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-Standard optimized no variables but Box avg speed: {:?}", (duration_sum / marks_len as u32));
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-    let optimized_ast = Box::new(optimized_ast);
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    for i in 0..REPS {
-        let now = Instant::now();
-        let _execution_res = optimized_ast.executor().execute_stack();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Standard optimized no variables but Box and stack avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-Standard optimized no variables but Box and stack avg speed: {:?}", (duration_sum / marks_len as u32));
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-
-
-    let sum = 0;
-    let mut marks = Vec::with_capacity((REPS - MINIMUM_TO_COUNT) as usize);
-    let alloc_start = Instant::now();
-    for i in 0..REPS {
-        let now = Instant::now();
-        let elapsed = now.elapsed();
-        if i > MINIMUM_TO_COUNT {
-            marks.push(elapsed);
-        }
-    }
-    let alloc_end = alloc_start.elapsed();
-    let marks_len = marks.len();
-    let duration_sum = marks.into_iter().sum::<Duration>();
-    println!("-Static op avg speed: {:?}", (duration_sum / marks_len as u32).as_secs_f64());
-    println!("-Static op avg speed: {:?}", (duration_sum / marks_len as u32));
-    println!("-sum: {:?}", duration_sum.as_secs_f64());
-    println!("-bench: {:?}", alloc_end.as_secs_f64());
-    unsafe { println!("-Static: {SUM}"); }
-}
-
-static mut SUM: i128 = 0;
-
-fn test_function(a: Box<dyn Iterator<Item=VBValue>>) {
-    a.for_each(|val| println!("{val}"));
-}
-
-
-const INPUT: &'static str = r#"nonexisting_function(aasdjk,asd);
-            let a = 1;
-            a = 3;
-            b = a+2;
-            c = a.asocA.asocB;
-            a.asocA.asocB=1061;
-            Mod/function(a, b);
-
-            if true {
-            } else{
-                print("Negative branch that should never appear in AST")
-            }
-
-            if a.asocA {
-                g = a.asocA.asocB;
-                a = a.asocA.asocB;
-            } else{
-                h = a.asocA.asocB;
-                println("Negative branch for a.asocA" a);
-            }
-
-            a = 10
-
-            k = a.asocA.asocB;
-            k = a.asocA.asocB;
-
-
-            Mod/function(aasdjk,asd);
-            d.asocA.asocB=d.asocA.asocB;
-            e.asocA.asocB=d.asocA.asocB;
-            f.asocA.asocB=d.asocA.asocB;
-
-            if a.asocA.asocB {
-                e.asocA.asocB=d.asocA.asocB;
-            } else{
-                e.asocA.asocB=d.asocA.asocB;
-            }
-
-            adjksn(aasdjk,asd);
-            return f.asocA.asocB;
-            "#;
-
-
-// INPUT: &'static str = r#"let lazy = get_val(); if lazy<0{return 0;} else if lazy>20{return 20;} else {return lazy;}"#;
-
-/*
-const INPUT: &'static str = r#"
-    has_no_let = 5;
-    let has_let = 5;
-
-    let a = 10
-    while a > 0{
-        print("Current value of a is "+a);
-        a = a - 1;
-    }
-    print("Last value of a is "+a);
-
-    if lazy.asocA>20 {
-        return 20;
-    } else if lazy.asocA<0 {
-        return 0;
-    } else {
-        return lazy.asocA;
-    }
-    "#;
-
-
- */
-
-/*
-const INPUT: &'static str = r#"
-    a = 10
-    print("First value of a is "+a)
-    b = 1
-    while b<5{
-        if b<2 {
-            b = 5
-            a = 2
-            print("After change value of a is "+a)
-        }
-    }
-    "#;
-*/
-
-fn print_pairs_iter<'a, Rule: RuleType, RuleIter: Iterator<Item=Pair<'a, Rule>>>(pairs: RuleIter, ident: u8) {
-    pairs.into_iter().for_each(|p| {
-        let tabs = (0..ident).into_iter().map(|_| " - ").join("");
-        println!("{tabs}{:?} = {}", p.as_rule(), p.as_str());
-        print_pairs_iter(p.into_inner(), ident + 1);
-    });
-}
-*/

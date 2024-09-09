@@ -2,7 +2,8 @@ use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::mem;
-
+use std::collections::HashSet;
+use std::sync::LazyLock;
 use pest::iterators::Pair;
 use pest_derive::Parser;
 use simple_detailed_error::SimpleError;
@@ -11,7 +12,7 @@ use statement_parsing::WalkInput;
 
 use crate::engine::context::ContextBuilder;
 use crate::engine::Engine;
-use crate::execution::ast::{AST, Statement};
+use crate::execution::ast::{Statement, AST};
 use crate::execution::RuntimeVariable;
 use crate::function::{MoonFunction, ToAbstractFunction};
 use crate::HashMap;
@@ -23,10 +24,10 @@ pub mod error;
 
 #[derive(Parser)]
 #[grammar = "language_definition.pest"]
-pub struct SimpleParser;
+pub(crate) struct SimpleParser;
 
 #[derive(Clone, Debug)]
-pub struct FunctionInfo {
+pub(crate) struct FunctionInfo {
     can_inline_result: bool,
     function: MoonFunction,
     return_type_name: Option<String>,
@@ -48,6 +49,7 @@ impl FunctionInfo {
     }
 }
 
+/// Builder pattern for defining custom Engine's functions
 #[derive(Clone, Debug)]
 pub struct FunctionDefinition {
     pub(crate) associated_type_name: Option<String>,
@@ -57,47 +59,212 @@ pub struct FunctionDefinition {
 }
 
 impl FunctionDefinition {
+    /// Creates a new function with the name and function indicated as arguments.
+    ///
+    /// This for example defines a function called 'sum_two' that sums two **u8**s:
+    ///
+    /// ```rust
+    ///moon_script::FunctionDefinition::new("sum_two", |num:u8, other:u8| num+other);
+    /// ```
+    ///
+    /// You can use it this way:
+    ///
+    /// ```rust
+    /// use moon_script::{ContextBuilder, Engine, FunctionDefinition};
+    ///
+    /// let my_sum_function = FunctionDefinition::new("sum_two", |num:u8, other:u8| num+other);
+    ///
+    /// let mut engine = Engine::new();
+    /// engine.add_function(my_sum_function);
+    ///
+    /// let result = engine.parse("return sum_two(10,5);", ContextBuilder::new())
+    ///     .unwrap().execute().map(|value|u8::try_from(value)).unwrap().unwrap();
+    ///
+    /// assert_eq!(15, result);
+    /// ```
     pub fn new<Name: Into<String>, Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
     (function_name: Name, function: AbstractFunction) -> Self {
+        let mut function_info = FunctionInfo::new_raw(function.abstract_function());
+        function_info.return_type_name=MoonValueKind::get_kind_string_of::<ReturnValue>();
         Self {
-            function_info: FunctionInfo::new_raw(function.abstract_function()),
+            function_info: function_info,
             function_name: function_name.into(),
             module_name: None,
             associated_type_name: None,
         }
     }
 
-    pub fn name<Name: Into<String>>(mut self, function_name: Name) -> Self {
-        self.function_name = function_name.into();
-        self
-    }
-
-    pub fn function<Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
-    (mut self, function: AbstractFunction) -> Self {
-        self.function_info = FunctionInfo::new_raw(function.abstract_function());
-        self
-    }
-
+    /// Specifies the module name for this function.
     pub fn module_name<Name: Into<String>>(mut self, module_name: Name) -> Self {
         self.module_name = Some(module_name.into());
         self
     }
-    pub fn associated_type_name<Name: Into<String>>(mut self, associated_type_name: Name) -> Self {
-        self.associated_type_name = Some(associated_type_name.into());
+
+    /// Specifies the associated type for this function.
+    ///
+    ///
+    /// This is a function associated to the moon script primitive Integer:
+    /// ```rust
+    /// moon_script::FunctionDefinition::new("sum_two", |num:u8, other:u8| num+other)
+    ///     .associated_type_name(moon_script::MoonValueKind::Integer);
+    /// ```
+    ///
+    /// This is a function associated to a custom type that can be read as an u8:
+    /// ```rust
+    /// moon_script::FunctionDefinition::new("sum_two", |num:u8, other:u8| num+other)
+    ///     .associated_type_name("MyCustomTypeName");
+    /// ```
+    ///
+    pub fn associated_type_name<'input, Name: Into<MoonValueKind<'input>>>(mut self, associated_type_name: Name) -> Self {
+        self.associated_type_name = associated_type_name.into().get_moon_value_type().map(|string| string.to_string());
         self
     }
 
+    /// Specifies the associated type for this function, but instead of receiving a name or a
+    /// [crate::MoonValueKind], it receives the value, this is preferred over
+    /// [Self::associated_type_name] but it doesn't allow you to create pseudo-types, requiring
+    /// the use of real types.
+    ///
+    /// ```
+    /// use moon_script::{ContextBuilder, Engine, FunctionDefinition, InputVariable};
+    /// let mut engine = Engine::new();
+    /// engine.add_function(FunctionDefinition::new("add_two", |n:u8|n+2).associated_type_of::<u8>());
+    /// let context_with_variable = ContextBuilder::new().with_variable(InputVariable::new("five").associated_type_of::<u8>());
+    /// let ast = engine.parse("five.add_two()", context_with_variable).unwrap();
+    ///
+    /// let result : u8 = ast.executor().push_variable("five", 5).execute().unwrap().try_into().unwrap();
+    ///
+    /// assert_eq!(7, result);
+    ///
+    /// ```
+    pub fn associated_type_of<T>(mut self) -> Self {
+        self.associated_type_name = MoonValueKind::get_kind_string_of::<T>();
+        self
+    }
+
+    /// Marks this function as constant, being able to inline it's results when compiling the script
+    /// if the arguments are also constant.
     pub const fn inline(mut self) -> Self {
         self.function_info.can_inline_result = true;
         self
     }
 
-    pub fn knwon_return_type_name<Name: ToString>(mut self, return_type_name: Name) -> Self {
-        self.function_info.return_type_name = Some(return_type_name.to_string());
+    /// Specifies the type of the return value for this function, if let unmarked, associations
+    /// cannot be used and therefore properties won't work.
+    pub fn known_return_type_name<'input, Name: Into<MoonValueKind<'input>>>(mut self, return_type_name: Name) -> Self {
+        self.function_info.return_type_name = return_type_name.into().get_moon_value_type().map(|string| string.to_string());
+        self
+    }
+
+    /// Specifies the type of the return value for this function, but instead of receiving a name or
+    /// a [crate::MoonValueKind], it receives the value, this is preferred over
+    /// [Self::known_return_type_name] but it doesn't allow you to create pseudo-types, requiring
+    /// the use of real types.
+    pub fn known_return_type_of<T>(mut self) -> Self {
+        self.function_info.return_type_name = MoonValueKind::get_kind_string_of::<T>();
         self
     }
 }
 
+
+struct Privatize;
+
+/// Types of Moon values
+pub enum MoonValueKind<'selflf> {
+    Null,
+    Boolean,
+    Integer,
+    Decimal,
+    String,
+    Array,
+    Function,
+    Invalid,
+    #[allow(private_interfaces)]
+    CustomStr(&'selflf str, Privatize),
+    #[allow(private_interfaces)]
+    CustomString(String, Privatize),
+}
+
+static RESERVED_MOON_VALUE_KINDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
+    [MoonValueKind::Null, MoonValueKind::Boolean, MoonValueKind::Integer,
+        MoonValueKind::Decimal, MoonValueKind::String, MoonValueKind::Array,
+        MoonValueKind::Function]
+        .map(|value_kind| value_kind.get_moon_value_type().unwrap().to_string())
+        .into_iter()
+        .collect::<HashSet<String>>()
+});
+
+pub(crate) static RUST_TYPES_TO_MOON_VALUE_KINDS: LazyLock<HashMap<&'static str, String>> = LazyLock::new(||{
+    [
+        (core::any::type_name::<()>(), MoonValueKind::Null),
+        (core::any::type_name::<bool>(), MoonValueKind::Boolean),
+        (core::any::type_name::<i8>(), MoonValueKind::Integer),
+        (core::any::type_name::<i16>(), MoonValueKind::Integer),
+        (core::any::type_name::<i32>(), MoonValueKind::Integer),
+        (core::any::type_name::<i64>(), MoonValueKind::Integer),
+        (core::any::type_name::<i128>(), MoonValueKind::Integer),
+        (core::any::type_name::<isize>(), MoonValueKind::Integer),
+        (core::any::type_name::<u8>(), MoonValueKind::Integer),
+        (core::any::type_name::<u16>(), MoonValueKind::Integer),
+        (core::any::type_name::<u32>(), MoonValueKind::Integer),
+        (core::any::type_name::<u64>(), MoonValueKind::Integer),
+        (core::any::type_name::<u128>(), MoonValueKind::Integer),
+        (core::any::type_name::<usize>(), MoonValueKind::Integer),
+        (core::any::type_name::<f32>(), MoonValueKind::Decimal),
+        (core::any::type_name::<f64>(), MoonValueKind::Decimal),
+        (core::any::type_name::<String>(), MoonValueKind::String),
+    ]
+        .map(|(rust_type, moon_value_kind)|{
+            (rust_type, moon_value_kind.get_moon_value_type().unwrap().to_string())
+        })
+        .into_iter()
+        .collect()
+});
+
+impl MoonValueKind<'_> {
+    pub(crate) fn get_kind_string_of<T>() -> Option<String> {
+        RUST_TYPES_TO_MOON_VALUE_KINDS
+            .get(core::any::type_name::<T>()).cloned()
+            .or_else(||
+                MoonValueKind::from(core::any::type_name::<T>())
+                    .get_moon_value_type().map(|string| string.to_string())
+            )
+            .filter(|name|!name.eq("null"))
+    }
+
+    pub(crate) fn get_moon_value_type(&self) -> Option<&str> {
+        Some(match self {
+            MoonValueKind::Null => "null",
+            MoonValueKind::Boolean => "bool",
+            MoonValueKind::Integer => "int",
+            MoonValueKind::Decimal => "decimal",
+            MoonValueKind::String => "string",
+            MoonValueKind::Array => "array",
+            MoonValueKind::Function => "function",
+            MoonValueKind::Invalid => return None,
+            MoonValueKind::CustomStr(str, _) => str,
+            MoonValueKind::CustomString(str, _) => str
+        })
+    }
+}
+
+impl<'typename> From<&'typename str> for MoonValueKind<'typename> {
+    fn from(value: &'typename str) -> Self {
+        if RESERVED_MOON_VALUE_KINDS.contains(value) {
+            return Self::Invalid;
+        }
+        Self::CustomStr(value, Privatize)
+    }
+}
+
+impl From<String> for MoonValueKind<'_> {
+    fn from(value: String) -> Self {
+        if RESERVED_MOON_VALUE_KINDS.contains(&value) {
+            return Self::Invalid;
+        }
+        Self::CustomString(value, Privatize)
+    }
+}
 
 fn optimize_variables(context: &mut ContextBuilder, inlineable_variables: Vec<(String, usize)>, statements: &mut Vec<Statement>) -> (Vec<RuntimeVariable>, HashMap<String, usize>) {
     let variables = context.take_all_variables();
@@ -198,12 +365,10 @@ fn optimize_variables(context: &mut ContextBuilder, inlineable_variables: Vec<(S
     (variables, parameterized_variables)
 }
 
-pub fn build_ast<'input>(token: Pair<'input, Rule>, base: &Engine, mut context: ContextBuilder) -> Result<AST, Vec<SimpleError<'input>>> {
+pub(crate) fn build_ast<'input>(token: Pair<'input, Rule>, base: &Engine, mut context: ContextBuilder) -> Result<AST, Vec<SimpleError<'input>>> {
     if token.as_rule() != Rule::BASE_STATEMENTS {}
     let statements_tokens = token.into_inner().next().unwrap();
     context.started_parsing = true;
-
-
     let inlineable_variables = context.in_use_variables.get(0).map(|(_, variables)| {
         variables.iter().enumerate()
             .filter(|(_, variable)| { variable.current_known_value.is_none() })

@@ -83,7 +83,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                         .into()])?;
                 let array_access_function = FunctionInfo {
                     can_inline_result: true,
-                    function: (|moon_value: MoonValue, index: usize| ->Result<MoonValue, String> {
+                    function: (|moon_value: MoonValue, index: usize| -> Result<MoonValue, String> {
                         match moon_value {
                             MoonValue::Array(array) => array
                                 .get(index)
@@ -111,8 +111,8 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
         Rule::fncall => {
             let mut errors = Vec::new();
             let mut token = token.into_inner();
-            let mut object = None;
-            let mut object_type = None;
+            let mut object: Option<FullValue> = None;
+            let mut object_type : Option<String> = None;
             let mut module = None;
             let function_name: &str;
             loop {
@@ -120,13 +120,20 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                 let current_token_as_str = current_token.as_str();
                 match current_token.as_rule() {
                     Rule::fncall_object => {
-                        let variable_object = context.find_variable(&current_token_as_str)
+                        let (t_object_type, t_object) = context.find_variable(&current_token_as_str)
+                            .map(|(block_level, var_index, value)|{
+                                let type_name = value.associated_type_name.clone();
+                                let value = FullValue::Variable { block_level, var_index };
+                                (type_name, value)
+                            })
+                            .or_else(|| base.constants().get(current_token_as_str)
+                                .map(|constant| (constant.type_name.clone(), FullValue::from(constant.value.clone())))
+                            )
                             .ok_or_else(|| vec![ASTBuildingError::VariableNotInScope { variable_name: current_token_as_str }.into()])?;
-                        object_type = Some(variable_object.2
-                            .associated_type_name.clone()
+                        object = Some(t_object);
+                        object_type = Some(t_object_type
                             .ok_or_else(|| vec![ASTBuildingError::CouldntInlineVariableOfUnknownType { variable_name: current_token_as_str }.into()])?
                         );
-                        object = Some(FullValue::Variable { block_level: variable_object.0, var_index: variable_object.1 });
                     }
                     Rule::fncall_module_name => module = Some(current_token_as_str),
                     Rule::fncall_function_name => {
@@ -156,7 +163,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
                     FullValue::Variable { block_level, var_index }
                 })
             } else if let Some(value) = base.constants().get(ident) {
-                Ok(FullValue::from(value.clone()))
+                Ok(FullValue::from(value.value.clone()))
             } else {
                 Err(vec![ASTBuildingError::VariableNotInScope { variable_name: ident }.to_simple_error()])
             }
@@ -180,7 +187,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
     res
 }
 
-fn decompress_function<'fn_name, 'fn_info>(function_name: &'fn_name str, mut args: Vec<FullValue>, function: &'fn_info FunctionInfo) -> Result<FullValue, Vec<SimpleError<'fn_name>>> {
+fn decompress_function<'fn_name, 'fn_info>(function_name: &'fn_name str, args: Vec<FullValue>, function: &'fn_info FunctionInfo) -> Result<FullValue, Vec<SimpleError<'fn_name>>> {
     Ok(if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
         let inlined_res = function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
             .map_err(|runtime_error| vec![ASTBuildingError::CouldntInlineFunction { function_name, runtime_error }.into()])?;
@@ -194,15 +201,23 @@ fn decompress_function<'fn_name, 'fn_info>(function_name: &'fn_name str, mut arg
 pub(crate) fn parse_property<'input>(idents: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, prepend_on_last_property: Option<&'static str>, mut extra_value_for_last_property: Option<FullValue>) -> Result<FullValue, Vec<SimpleError<'input>>> {
     let mut idents = idents.into_inner();
     let variable = idents.next().unwrap();
-    let (block_level, var_index, variable) =
-        context.find_variable(variable.as_str())
-            .ok_or_else(|| vec![ASTBuildingError::VariableNotInScope { variable_name: variable.as_str() }.into()])?;
-    let mut last_associated_type_name = variable.associated_type_name.clone();
-    let mut stack = if variable.inlineable_value().as_ref().is_some_and(|known_value| known_value.is_simple_value()) {
-        variable.inlineable_value().unwrap()
-    } else {
-        FullValue::Variable { block_level, var_index }
-    };
+
+    let (mut type_name, mut value) = context.find_variable(variable.as_str())
+        .map(|(block_level, var_index, variable)| {
+            let type_of_var = variable.associated_type_name.clone();
+            let value = if variable.inlineable_value().as_ref().is_some_and(|known_value| known_value.is_simple_value()) {
+                variable.inlineable_value().unwrap()
+            } else {
+                FullValue::Variable { block_level, var_index }
+            };
+            (type_of_var, value)
+        })
+        .or_else(|| base.constants().get(variable.as_str())
+            .map(|constant|
+                (constant.type_name.clone(), FullValue::from(constant.value.clone()))))
+        .ok_or_else(|| vec![ASTBuildingError::VariableNotInScope { variable_name: variable.as_str() }.into()])?;
+
+
     let mut idents_and_params = idents.collect::<VecDeque<_>>();
     while !idents_and_params.is_empty() {
         let property = idents_and_params.pop_front().unwrap();
@@ -210,14 +225,14 @@ pub(crate) fn parse_property<'input>(idents: Pair<'input, Rule>, base: &Engine, 
         let prepend = if !is_last_ident || prepend_on_last_property.is_none() { "get_" } else { prepend_on_last_property.unwrap() };
         let prepended = format!("{prepend}{}", property.as_str());
 
-        let function = base.find_function(last_associated_type_name.clone(), None, &*prepended)
-            .or_else(|| base.find_function(last_associated_type_name.clone(), None, property.as_str()))
+        let function = base.find_function(type_name.clone(), None, &*prepended)
+            .or_else(|| base.find_function(type_name.clone(), None, property.as_str()))
             .ok_or_else(|| vec![ASTBuildingError::PropertyFunctionNotFound {
                 preferred_property_to_find: prepended,
                 original_property: property.as_str(),
-                typename: last_associated_type_name.clone().unwrap_or_else(|| "Unknown type".to_string()),
+                typename: type_name.clone(),
             }.into()])?;
-        let mut args = vec![stack];
+        let mut args = vec![value];
         if idents_and_params.front().as_ref().is_some_and(|rule| rule.as_rule() == Rule::property_params) {
             for arg in idents_and_params.pop_front().unwrap().into_inner().map(|value| build_value_token(value, base, context)) {
                 args.push(arg?);
@@ -226,13 +241,13 @@ pub(crate) fn parse_property<'input>(idents: Pair<'input, Rule>, base: &Engine, 
         if is_last_ident && extra_value_for_last_property.is_some() {
             args.push(mem::take(&mut extra_value_for_last_property).unwrap());
         }
-        last_associated_type_name = function.return_type_name.clone();
-        stack = if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
+        type_name = function.return_type_name.clone();
+        value = if function.can_inline_result && args.iter().all(|arg| arg.is_simple_value()) {
             function.function.execute_iter(args.into_iter().map(|arg| Ok(arg.resolve_value_no_context())))
                 .map_err(|err| vec![err.into()])?.into()
         } else {
             FullValue::Function(ASTFunction { function: function.function.clone(), args })
         }
     }
-    Ok(stack)
+    Ok(value)
 }

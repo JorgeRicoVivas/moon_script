@@ -8,7 +8,8 @@ use crate::execution::optimized_ast::OptimizedAST;
 use crate::HashMap;
 use crate::value::{FullValue, MoonValue};
 
-#[derive(Debug, Clone, Default)]
+/// Compiled Script
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct AST {
     pub(crate) statements: Vec<Statement>,
     pub(crate) variables: Vec<RuntimeVariable>,
@@ -16,16 +17,28 @@ pub struct AST {
 }
 
 impl AST {
+
+    /// Gets an executor for this script, from this executor you can both give input variables and
+    /// execute it afterward.
     pub fn executor(&self) -> ASTExecutor<'_> {
         ASTExecutor::new(self)
     }
 
+    /// Turns this AST into an [OptimizedAST], using [OptimizedAST] is always preferred over [AST].
     pub fn to_optimized_ast(self) -> OptimizedAST {
         OptimizedAST::from(self)
     }
+
+    /// Executes the script withouth any input variables, if you want to specify them, get its
+    /// [Self::executor] and push variables to it with [ASTExecutor::push_variable] before calling
+    /// [ASTExecutor::execute].
+    pub fn execute(&self) -> Result<MoonValue, RuntimeError> {
+        self.executor().execute()
+    }
+
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Statement {
     WhileBlock { condition: FullValue, statements: Vec<Statement> },
     IfElseBlock { conditional_statements: Vec<ConditionalStatements> },
@@ -35,8 +48,8 @@ pub(crate) enum Statement {
     ReturnCall(FullValue),
 }
 
-
-pub struct ExecutingContext {
+#[derive(Clone)]
+struct ExecutingContext {
     pub(crate) variables: Vec<RuntimeVariable>,
 }
 
@@ -115,16 +128,21 @@ impl ExecutingContext {
     }
 }
 
+#[derive(Clone)]
+/// Allows to execute an AST contents and to also push input variables.
 pub struct ASTExecutor<'ast> {
     ast: &'ast AST,
     context: ExecutingContext,
 }
 
 impl<'ast> ASTExecutor<'ast> {
+
     pub(crate) fn new(ast: &'ast AST) -> Self {
         Self { ast, context: ExecutingContext { variables: ast.variables.clone() } }
     }
 
+    /// Pushes a variable to this executor, if it is possible, it's preferred for you to push
+    /// variables either as constants on the [crate::Engine], or in the [crate::ContextBuilder].
     pub fn push_variable<Name: ToString, Variable: Into<MoonValue>>(mut self, name: Name, variable: Variable) -> Self {
         let (name, variable) = (name.to_string(), variable.into());
         if let Some(variable_index) = self.ast.parameterized_variables.get(&name) {
@@ -133,6 +151,7 @@ impl<'ast> ASTExecutor<'ast> {
         self
     }
 
+    /// Executes the AST.
     pub fn execute(mut self) -> Result<MoonValue, RuntimeError> {
         for block in self.ast.statements.iter() {
             if let Some(res) = self.context.execute_block(&block)? {

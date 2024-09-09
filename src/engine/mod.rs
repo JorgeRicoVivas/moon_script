@@ -1,20 +1,22 @@
 use alloc::string::{String, ToString};
-
-use pest::Parser;
+use log::trace;
 use pest::pratt_parser::{Assoc, Op, PrattParser};
+use pest::Parser;
 use simple_detailed_error::SimpleErrorDetail;
 
 use context::ContextBuilder;
 
-use crate::{HashMap, parsing};
 use crate::execution::ast::AST;
-use crate::parsing::{FunctionDefinition, FunctionInfo, Rule, SimpleParser};
 use crate::parsing::error::ParsingError;
+use crate::parsing::{FunctionDefinition, FunctionInfo, Rule, SimpleParser};
 use crate::reduced_value_impl::impl_operators;
 use crate::value::MoonValue;
+use crate::{parsing, HashMap, MoonValueKind};
 
 pub mod context;
 
+/// Scripting engine, it allows to create runnable ASTs, and also to give functions and constant
+/// values for said scripts
 pub struct Engine {
     //CustomType->RustModule->FunctionName->fn()
     associated_functions: HashMap<String, HashMap<String, HashMap<String, FunctionInfo>>>,
@@ -32,9 +34,55 @@ pub struct Engine {
     unary_operators: HashMap<String, FunctionInfo>,
     binary_operation_parser: PrattParser<Rule>,
 
-    constants: HashMap<String, MoonValue>,
-
+    constants: HashMap<String, Constant>,
 }
+
+/// Defines a constant that will be inlined on scripts.
+pub struct Constant {
+    pub(crate) value:MoonValue,
+    pub(crate) type_name:Option<String>,
+}
+
+impl Constant{
+
+    /// Creates a new constant out of this value by mapping it into a MoonValue
+    pub fn new<Value: Into<MoonValue>>(value:Value) -> Constant {
+        Constant::from(value.into())
+    }
+
+    /// Specifies what kind type is associated to this constant, see the Properties section of the
+    /// book for more information about properties.
+    pub fn associated_type<'input, Name: Into<MoonValueKind<'input>>>(mut self, name: Name) -> Self {
+        self.type_name = name.into().get_moon_value_type().map(|string|string.to_string());
+        self
+    }
+
+    /// Specifies what kind type is associated to this constant, but instead of receiving a name or
+    /// a [crate::MoonValueKind], it receives the value's type, this is preferred over
+    /// [Self::associated_type] but it doesn't allow you to create pseudo-types, requiring the use
+    /// of real types.
+    ///
+    /// see the Properties section of the book for more information about properties.
+    pub fn associated_type_of<T>(mut self) -> Self {
+        self.type_name = MoonValueKind::get_kind_string_of::<T>();
+        self
+    }
+
+    /// Gets the MoonValue associated to this constant
+    pub fn value(&self) -> &MoonValue {
+        &self.value
+    }
+}
+
+impl<T:Into<MoonValue>> From<T> for Constant{
+    fn from(value: T) -> Self {
+        Self{
+            type_name: MoonValueKind::get_kind_string_of::<T>(),
+            value: value.into(),
+        }
+    }
+}
+
 
 impl Default for Engine {
     fn default() -> Self {
@@ -69,7 +117,7 @@ impl Default for Engine {
             constants: Default::default(),
         };
         #[cfg(feature = "std")]
-            let mut res = res;
+        let mut res = res;
         #[cfg(feature = "std")]
         res.add_function(FunctionDefinition::new("print", |value: String| {
             println!("{value}");
@@ -84,12 +132,45 @@ impl Default for Engine {
 
 
 impl Engine {
-    pub fn add_constant<Name: ToString, Value: Into<MoonValue>>(&mut self, name: Name, value: Value) -> Option<MoonValue> {
+    /// Creates a new empty Engine containing just basic functions, like println or binary operators
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Adds a constant with a value
+    ///
+    /// ```rust
+    /// use moon_script::{ContextBuilder, Engine};
+    /// let mut engine = Engine::new();
+    /// engine.add_constant("MY_CONSTANT", 15);
+    /// let runnable_ast = engine.parse(r###"
+    ///     return MY_CONSTANT;
+    /// "###, ContextBuilder::default()).unwrap();
+    /// let result : i32 = runnable_ast.executor().execute().unwrap().try_into().unwrap();
+    /// assert_eq!(15, result);
+    /// ```
+    pub fn add_constant<Name: ToString, Value: Into<Constant>>(&mut self, name: Name, value: Value) -> Option<Constant> {
         self.constants.insert(name.to_string(), value.into())
     }
 
+    /// Adds a function with a name
+    ///
+    /// ```rust
+    /// use moon_script::{ContextBuilder, Engine, FunctionDefinition};
+    /// let mut engine = Engine::new();
+    /// engine.add_function(FunctionDefinition::new("say_hi_and_return_number", ||{
+    ///     println!("Hi!");
+    ///     return 5;
+    /// }));
+    /// let runnable_ast = engine.parse(r###"
+    ///     return say_hi_and_return_number();
+    /// "###, ContextBuilder::default()).unwrap();
+    /// let result : i32 = runnable_ast.executor().execute().unwrap().try_into().unwrap();
+    /// assert_eq!(5, result);
+    /// ```
     pub fn add_function<Function: Into<FunctionDefinition>>(&mut self, function_definition: Function) {
         let function_definition = function_definition.into();
+        trace!("Adding function: {function_definition:?}");
         match (function_definition.associated_type_name, function_definition.module_name) {
             (None, None) => {
                 self.built_in_functions.insert(function_definition.function_name, function_definition.function_info);
@@ -110,9 +191,31 @@ impl Engine {
         }
     }
 
+    /// Parses a script into an AST using a specific context
+    ///
+    /// Adds a function with a name
+    ///
+    /// ```rust
+    /// use moon_script::{InputVariable, ContextBuilder, Engine, FunctionDefinition};
+    ///
+    /// let mut engine = Engine::new();
+    /// engine.add_function(FunctionDefinition::new("add_five", |num:u8| {
+    ///     return num + 5;
+    /// }));
+    ///
+    /// let context = ContextBuilder::new()
+    ///     .with_variable(InputVariable::new("ten").value(10));
+    ///
+    ///
+    /// let runnable_ast = engine.parse(r###"
+    ///     return add_five(ten);
+    /// "###, context).unwrap();
+    /// let result : i32 = runnable_ast.executor().execute().unwrap().try_into().unwrap();
+    /// assert_eq!(15, result);
+    /// ```
     pub fn parse<'input>(&self, input: &'input str, context_builder: ContextBuilder) -> Result<AST, ParsingError<'input>> {
         let successful_parse = SimpleParser::parse(Rule::BASE_STATEMENTS, input)
-            .map_err(|e| ParsingError::Parsing(e))?
+            .map_err(|e| ParsingError::Grammar(e))?
             .next().unwrap();
         parsing::build_ast(successful_parse.clone(), self, context_builder)
             .map_err(|errors| {
@@ -163,7 +266,7 @@ impl Engine {
             }
         }
     }
-    pub(crate) fn constants(&self) -> &HashMap<String, MoonValue> {
+    pub(crate) fn constants(&self) -> &HashMap<String, Constant> {
         &self.constants
     }
     pub(crate) fn binary_operation_parser(&self) -> &PrattParser<Rule> {

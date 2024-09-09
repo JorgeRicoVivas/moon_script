@@ -12,16 +12,29 @@ use string_colorization::{foreground, style};
 use crate::execution::RuntimeError;
 use crate::parsing::Rule;
 
+/// Error happened while parsing, this can happen due to a grammar parsing error, or if the syntax
+/// it's right, because the of a series of [ASTBuildingError].
 #[derive(Debug)]
 pub enum ParsingError<'input> {
-    Parsing(pest::error::Error<Rule>),
+    /// Happens if the script doesn't match Moon Script's grammar.
+    Grammar(pest::error::Error<Rule>),
+    /// Happens if the grammar is right, but at least one [ASTBuildingError] happens.
+    ///
+    /// Why isn't this a series of [ASTBuildingError]s?: Individual programs are extremely unlikely
+    /// to manually use them internally, but rather want a clear output telling why the script is
+    /// wrong, with [simple_detailed_error::SimpleError], Moon Script is able to specifies as many
+    /// errors as possible using a clear tree structure, and errors are given with colors* when
+    /// printing errors, showing with clarity where the error happens.
+    ///
+    /// * For accessibility, please, read the [colored] create used by [simple_detailed_error],
+    /// which uses [NO_COLOR](https://no-color.org/).
     CouldntBuildAST(SimpleError<'input>),
 }
 
 impl<'input> Display for ParsingError<'input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            ParsingError::Parsing(pest_error) => f.write_str(&format!("{pest_error}")),
+            ParsingError::Grammar(pest_error) => f.write_str(&format!("{pest_error}")),
             ParsingError::CouldntBuildAST(simple_error) => f.write_str(&format!("{}", simple_error.as_display_struct(true))),
         }
     }
@@ -30,7 +43,7 @@ impl<'input> Display for ParsingError<'input> {
 impl<'input> From<ParsingError<'input>> for SimpleError<'input> {
     fn from(value: ParsingError<'input>) -> Self {
         match value {
-            ParsingError::Parsing(parsing) => {
+            ParsingError::Grammar(parsing) => {
                 let mut error = SimpleError::new()
                     .error_detail(format!("On {} because of {}\nDetail:{}", parsing.line(), parsing.variant, parsing));
                 match parsing.line_col {
@@ -51,20 +64,100 @@ impl<'input> From<ParsingError<'input>> for SimpleError<'input> {
 #[cfg(feature = "std")]
 impl<'input> std::error::Error for ParsingError<'input> {}
 
+/// Specifies why an AST could not be parsed, the 'input lifetime points references the input of
+/// your script's String value
 #[derive(Debug)]
 pub enum ASTBuildingError<'input> {
-    ConditionDoestNotResolveToBoolean { predicate:&'input str },
-    VariableNotInScope { variable_name: &'input str },
-    OperatorNotFound { operator: &'input str },
-    FunctionNotFound { function_name: &'input str, associated_to_type: Option<String>, module: Option<&'input str> },
-    PropertyFunctionNotFound { preferred_property_to_find: String, original_property: &'input str, typename: String },
-    CouldntInlineFunction { function_name: &'input str, runtime_error: RuntimeError },
-    CouldntInlineGetter { execution_error_message: String, property: &'input str },
-    CouldntInlineUnaryOperator { operator: &'input str, runtime_error: RuntimeError },
-    CouldntInlineBinaryOperator { operator: &'input str, runtime_error: RuntimeError },
-    CouldntInlineVariableOfUnknownType { variable_name: &'input str },
-    CannotParseInteger { value: &'input str, lower_bound: i128, upper_bound: i128 },
-    CannotParseDecimal { value: &'input str, lower_bound: f64, upper_bound: f64 },
+    /// A constant predicate cannot be resolved, likely because of wrong constant function
+    ConditionDoestNotResolveToBoolean {
+        /// Predicate where it happens (This is a reference to the script that is tried to compile).
+        predicate: &'input str
+    },
+    /// An ident of a variable was found, but the name doesn't match to a variable that was created
+    /// inside the script, nor an Engine's constants or the ContextBuilder input variables
+    VariableNotInScope {
+        /// Name of the variable.
+        variable_name: &'input str
+    },
+    /// Used an operator that doesn't exist, this will likely never happen
+    OperatorNotFound {
+        /// Name of the operator as symbol.
+        operator: &'input str
+    },
+    /// A function name was specified, but said function doesn't exist on the Engine
+    FunctionNotFound {
+        /// Name of the function.
+        function_name: &'input str,
+        /// Associated type  (Might be none if it's not specified in the script).
+        associated_to_type: Option<String>,
+        /// Module (Might be none if it's not specified in the script).
+        module: Option<&'input str>,
+    },
+    /// A property was specified, but it doesn't exist on the Engine (See the Properties section of
+    /// the book for more information)
+    PropertyFunctionNotFound {
+        /// Preferred name of the property to find, this is set_*name* in setters and get_*name* in
+        /// getters.
+        preferred_property_to_find: String,
+        /// Name of the function (Property).
+        original_property: &'input str,
+        /// Associated type of the variable (Might not have one if the variable type is not
+        /// specified).
+        typename: Option<String>,
+    },
+    /// An error was triggered while inlining a constant function
+    CouldntInlineFunction {
+        /// Name of the function
+        function_name: &'input str,
+        /// Specified the error that happened
+        runtime_error: RuntimeError,
+    },
+    /// An error was triggered while inlining a constant getter (See getters in the Properties
+    /// section of the book for more information about properties)
+    CouldntInlineGetter {
+        /// Explanation of the error
+        execution_error_message: String,
+        /// Name of the property
+        property: &'input str,
+    },
+    /// An unary operator was tried to be inlined with a constant value, but said function failed
+    CouldntInlineUnaryOperator {
+        /// Symbol of the operator
+        operator: &'input str,
+        /// Specified the error that happened
+        runtime_error: RuntimeError,
+    },
+    /// A binary operator was tried to be inlined with a constant value, but said function failed
+    CouldntInlineBinaryOperator {
+        /// Symbol of the operator
+        operator: &'input str,
+        /// Specified the error that happened
+        runtime_error: RuntimeError,
+    },
+    /// Tried to inline a constant variable whose type wasn't specified in the ContextBuilder (nor
+    /// the Engine if it is a constant).
+    CouldntInlineVariableOfUnknownType {
+        /// Name of the variable
+        variable_name: &'input str
+    },
+    /// An integer value could not be parsed in range
+    CannotParseInteger {
+        /// Value (This is a reference to the script that is tried to compile).
+        value: &'input str,
+        /// Minimum bound the string should have been
+        lower_bound: i128,
+        /// Maximum bound the string should have been
+        upper_bound: i128,
+    },
+    /// A decimal value could not be parsed in range
+    CannotParseDecimal {
+        /// Value (This is a reference to the script that is tried to compile).
+        value: &'input str,
+        /// Minimum bound the string should have been
+        lower_bound: f64,
+        /// Maximum bound the string should have been
+        upper_bound: f64,
+    },
 }
 
 #[cfg(not(feature = "colorization"))]
@@ -82,7 +175,7 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
         let explanation;
         let mut solution = String::new();
         #[cfg(feature = "colorization")]
-            let mut colorization_markers: Vec<(&str, string_colorization::Colorizer)> = Vec::new();
+        let mut colorization_markers: Vec<(&str, string_colorization::Colorizer)> = Vec::new();
         match self {
             ASTBuildingError::ConditionDoestNotResolveToBoolean { predicate } => {
                 explanation = format!("The predicate '{}' doesn't resolve to a boolean value", predicate.bold());
@@ -111,6 +204,7 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
                 colorization_markers.push((function_name, style::Clear + foreground::Red));
             }
             ASTBuildingError::PropertyFunctionNotFound { preferred_property_to_find, original_property, typename } => {
+                let typename = typename.as_ref().map(|v|&**v).unwrap_or("Unknown type");
                 explanation = format!("The type {typename} does not have a property named {} as there is no associated function named {preferred_property_to_find} nor {original_property}.",
                                       original_property.bold()
                 );

@@ -249,7 +249,8 @@ dependencies = [
 [[package]]
 name = "simple_detailed_error"
 version = "0.1.0"
-source = "git+https://github.com/JorgeRicoVivas/simple_detailed_error#eb23fe63faaba022d8ac618ba3e14909522baecc"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d4e8a79e862854bc7583f434c9184cfd485cc91528a3db2c46c6a3d328c6aa4"
 dependencies = [
  "colored",
  "string_colorization",

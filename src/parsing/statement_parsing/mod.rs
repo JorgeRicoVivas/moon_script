@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use pest::iterators::Pair;
 use simple_detailed_error::SimpleError;
 
-use crate::engine::context::{CompiletimeVariableInformation, ContextBuilder};
+use crate::engine::context::{InputVariable, ContextBuilder};
 use crate::engine::Engine;
 use crate::execution::ast::Statement;
 use crate::execution::ConditionalStatements;
@@ -53,19 +53,23 @@ fn walk_value<Action: FnMut(WalkInput)>(action: &mut Action, value: &mut FullVal
 
 pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, is_last_token: bool) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {
     let token_str = token.as_str();
+    let token_as_string = if log::Level::Trace <= log::STATIC_MAX_LEVEL && log::Level::Trace <= log::max_level(){
+        Some(token_str.to_string())
+    }else{
+        None
+    };
     let line_and_column = parsing::line_and_column_of_token(&token, context);
-    log::trace!("Parsing staement rule {:?} with contents: {}", token.as_rule(), token.as_str());
-    match token.as_rule() {
+    log::trace!("Parsing statement rule {:?} with contents: {}", token.as_rule(), token.as_str());
+    let token_rule = token.as_rule();
+    let res = match &token_rule {
         Rule::STATEMENTS => {
             parse_statements(token, base, context, true)
         }
         Rule::WHILE_BLOCK => {
             let mut pairs = token.into_inner();
-            context.forbid_variables_from_inlining();
             let predicate_pair = pairs.next().unwrap().into_inner().next().unwrap();
             let predicate_str = predicate_pair.as_str();
             let predicate = build_value_token(predicate_pair, base, context).add_where_error(predicate_str, line_and_column)?;
-            context.permit_variables_to_inline();
             context.push_block_level();
             let statements = parse_statements(pairs.next().unwrap(), base, context, false)?;
             context.pop_block_level();
@@ -153,7 +157,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                 Rule::ident => {
                     let value = build_value_token(pairs.next().unwrap(), &base, context).add_where_error(token_str, line_and_column)?;
                     if value.is_simple_value() {
-                        let compiletime_variable_information = CompiletimeVariableInformation {
+                        let compiletime_variable_information = InputVariable {
                             associated_type_name: value.type_name(context),
                             name: ident.as_str().to_string(),
                             current_known_value: Some(value.clone()),
@@ -166,7 +170,7 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                         context.push_variable_internal(compiletime_variable_information, declare_variable_as_new);
                         Ok(Vec::new())
                     } else {
-                        let compiletime_variable_information = CompiletimeVariableInformation {
+                        let compiletime_variable_information = InputVariable {
                             associated_type_name: value.type_name(context),
                             name: ident.as_str().to_string(),
                             current_known_value: None,
@@ -219,8 +223,10 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                 Ok(Vec::new())
             }
         }
-        _ => { unreachable!("Shouldn't have found a rule of type: {:?}={}", token.as_rule(), token.as_str()) }
-    }
+        _ => { unreachable!("Shouldn't have found a rule of type: {:?}={}", &token_rule, token_str) }
+    };
+    log::trace!("Parsing statement rule {:?} with contents: {} into {:?}", &token_rule, token_as_string.unwrap(), res);
+    res
 }
 
 fn parse_statements<'input>(token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder, last_statement_is_final_statement: bool) -> Result<Vec<Statement>, Vec<SimpleError<'input>>> {

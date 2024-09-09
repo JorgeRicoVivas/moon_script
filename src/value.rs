@@ -5,7 +5,9 @@ use core::fmt::{Display, Formatter};
 
 use crate::engine::context::ContextBuilder;
 use crate::execution::ASTFunction;
+use crate::parsing::MoonValueKind;
 
+/// Values used as input and outputs on scripts
 #[derive(Clone, PartialEq, Debug)]
 pub enum MoonValue {
     Null,
@@ -19,12 +21,12 @@ pub enum MoonValue {
 impl MoonValue {
     pub(crate) fn type_name(&self) -> &'static str {
         match self {
-            Self::Null => "null",
-            Self::Boolean(_) => "bool",
-            Self::Integer(_) => "int",
-            Self::Decimal(_) => "decimal",
-            Self::String(_) => "string",
-            Self::Array(_) => "array",
+            Self::Null => MoonValueKind::Null.get_moon_value_type().unwrap(),
+            Self::Boolean(_) => MoonValueKind::Boolean.get_moon_value_type().unwrap(),
+            Self::Integer(_) => MoonValueKind::Integer.get_moon_value_type().unwrap(),
+            Self::Decimal(_) => MoonValueKind::Decimal.get_moon_value_type().unwrap(),
+            Self::String(_) => MoonValueKind::String.get_moon_value_type().unwrap(),
+            Self::Array(_) => MoonValueKind::Array.get_moon_value_type().unwrap(),
         }
     }
 }
@@ -79,7 +81,7 @@ impl Display for MoonValue {
 
 
 #[derive(Debug, Clone)]
-pub enum FullValue {
+pub(crate) enum FullValue {
     Null,
     Boolean(bool),
     Integer(i128),
@@ -127,21 +129,21 @@ impl FullValue {
 
     pub(crate) fn type_name(&self, context_builder: &mut ContextBuilder) -> Option<String> {
         Some(match self {
-            FullValue::Null => "null",
-            FullValue::Boolean(_) => "bool",
-            FullValue::Integer(_) => "int",
-            FullValue::Decimal(_) => "decimal",
-            FullValue::String(_) => "string",
-            FullValue::Array(_) => "array",
-            FullValue::Function(_) => "function",
-            FullValue::Variable { block_level, var_index } => {
+            Self::Null => MoonValueKind::Null.get_moon_value_type().unwrap(),
+            Self::Boolean(_) => MoonValueKind::Boolean.get_moon_value_type().unwrap(),
+            Self::Integer(_) => MoonValueKind::Integer.get_moon_value_type().unwrap(),
+            Self::Decimal(_) => MoonValueKind::Decimal.get_moon_value_type().unwrap(),
+            Self::String(_) => MoonValueKind::String.get_moon_value_type().unwrap(),
+            Self::Array(_) => MoonValueKind::Array.get_moon_value_type().unwrap(),
+            Self::Function(_) => MoonValueKind::Function.get_moon_value_type().unwrap(),
+            Self::Variable { block_level, var_index } => {
                 return (context_builder
                     .get_variable_at(*block_level, *var_index).unwrap())
                     .inlineable_value()
                     .map(|know_value| know_value.type_name(context_builder))
                     .flatten();
             }
-            FullValue::DirectVariable(_) => { unreachable!() }
+            Self::DirectVariable(_) => { unreachable!() }
         }).map(|type_name| type_name.to_string())
     }
 

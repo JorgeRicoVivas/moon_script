@@ -7,11 +7,21 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Corrected unary operator grouping binary operators even when no parenthesis is indicated">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Added array access">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/language_definition.pest" beforeDir="false" afterPath="$PROJECT_DIR$/src/language_definition.pest" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/engine/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/context.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/engine/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/ast.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/optimized_ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/optimized_ast.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/function/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/function/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/value.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/value.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,28 +58,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Test moon_script.executor": "Run",
-    "Cargo.Test test::test.executor": "Run",
-    "Cargo.Test test::test_array.executor": "Run",
-    "Cargo.Test test::test_binary_comparator_and_unary.executor": "Run",
-    "Cargo.Test test::test_precedence.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Doctest of engine::parse (line 150).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Doctest of parsing::new (line 65).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test moon_script.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_array.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_binary_comparator_and_unary.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_precedence.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Cargo.Test test::test_array">
-    <configuration name="Test moon_script" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="test --workspace" />
+}</component>
+  <component name="RunManager" selected="Cargo.Doctest of engine::parse (line 150)">
+    <configuration name="Doctest of engine::parse (line 150)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --doc &quot;engine::parse\ (line\ 150)&quot;" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -85,8 +97,25 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test test::test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --lib test::test -- --exact" />
+    <configuration name="Doctest of parsing::new (line 65)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --doc &quot;parsing::new\ (line\ 65)&quot;" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test moon_script" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="test --workspace" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -155,10 +184,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Doctest of engine::parse (line 150)" />
+        <item itemvalue="Cargo.Doctest of parsing::new (line 65)" />
         <item itemvalue="Cargo.Test test::test_array" />
         <item itemvalue="Cargo.Test test::test_binary_comparator_and_unary" />
         <item itemvalue="Cargo.Test test::test_precedence" />
-        <item itemvalue="Cargo.Test test::test" />
       </list>
     </recent_temporary>
   </component>
@@ -189,7 +219,16 @@
       <workItem from="1720266348993" duration="1017000" />
       <workItem from="1720269023009" duration="1994000" />
       <workItem from="1725550906873" duration="510000" />
-      <workItem from="1725568675214" duration="1607000" />
+      <workItem from="1725568675214" duration="1964000" />
+      <workItem from="1725570678072" duration="47000" />
+      <workItem from="1725570936018" duration="321000" />
+      <workItem from="1725572213387" duration="1531000" />
+      <workItem from="1725573891630" duration="5938000" />
+      <workItem from="1725599965896" duration="774000" />
+      <workItem from="1725637531142" duration="2447000" />
+      <workItem from="1725650527221" duration="1633000" />
+      <workItem from="1725814862416" duration="12719000" />
+      <workItem from="1725837155551" duration="23000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -431,7 +470,15 @@
       <option name="project" value="LOCAL" />
       <updated>1720271665568</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Added array access">
+      <option name="closed" value="true" />
+      <created>1725570652390</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1725570652390</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -439,7 +486,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
-    <MESSAGE value="Renamed VBValue to MoonValue" />
     <MESSAGE value="ParsingError can now turn into SimpleError" />
     <MESSAGE value="No longer using Rc but Arc instead" />
     <MESSAGE value="VBFunction now also is Send and Sync" />
@@ -464,17 +510,7 @@
     <MESSAGE value="UnaryOperator takes as argument another value, rather than expansion of values" />
     <MESSAGE value="Corrected operator precedence" />
     <MESSAGE value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
-    <option name="LAST_COMMIT_MESSAGE" value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/execution/ast.rs</url>
-          <line>137</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="Added array access" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added array access" />
   </component>
 </project>

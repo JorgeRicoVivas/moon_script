@@ -7,8 +7,14 @@ use paste::paste;
 use crate::execution::RuntimeError;
 use crate::value::MoonValue;
 
+/// Allows to turn values to [crate::function::MoonFunction], but you shouldn't try to implement
+/// this.
 pub trait ToAbstractFunction<Params, Return, Function, Dummy> {
+
+    /// Turns this object into a [crate::function::MoonFunction]
     fn abstract_function(self) -> MoonFunction;
+
+    /// Placeholder
     fn dummy(_params: Params, _return_value: Return, _dummy: Dummy) {}
 }
 
@@ -18,6 +24,12 @@ pub struct MoonFunction {
     number_of_params: usize,
 }
 
+impl PartialEq for MoonFunction{
+    fn eq(&self, other: &Self) -> bool {
+        self.number_of_params == other.number_of_params
+    }
+}
+
 impl Debug for MoonFunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MoonFunction")
@@ -25,12 +37,6 @@ impl Debug for MoonFunction {
             .field("Number of params", &self.number_of_params)
             .finish()
     }
-}
-
-
-pub enum VBFunctionExecutingError {
-    MissingValue,
-    CouldNotParse,
 }
 
 impl MoonFunction {
