@@ -17,10 +17,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Check
-      run: cargo check --verbose
+      run: cargo check
     - name: Check no features
-      run: cargo check --no-default-features --verbose 
+      run: cargo check --no-default-features
     - name: Run tests
-      run: cargo test --no-fail-fast --verbose
+      run: cargo test --no-fail-fast
     - name: Run tests no features
-      run: cargo test --no-default-features --no-fail-fast --verbose
+      run: cargo test --no-default-features --no-fail-fast
