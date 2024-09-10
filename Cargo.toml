@@ -1,6 +1,6 @@
 [package]
 name = "moon_script"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 
 authors = ["Jorge Rico Vivas <jorgericosoftware@gmail.com>"]
@@ -10,9 +10,6 @@ keywords = ["scripting", "scripting-engine", "scripting-language", "script", "sc
 categories = ["no-std", "embedded", "game-development", "parser-implementations"]
 license-file = "LICENSE.txt"
 readme = "README.md"
-
-[package.metadata.docs.rs]
-documentation = "https://jorgericovivas.github.io/moon_script_book/"
 
 [lib]
 
