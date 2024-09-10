@@ -2,15 +2,19 @@ use alloc::fmt::{Debug, Display, Formatter};
 use alloc::format;
 use alloc::string::String;
 
-#[cfg(feature = "colorization")]
-use colored::Colorize;
 use pest::error::LineColLocation;
 use simple_detailed_error::{SimpleError, SimpleErrorDetail, SimpleErrorExplanation};
-#[cfg(feature = "colorization")]
-use string_colorization::{foreground, style};
 
 use crate::execution::RuntimeError;
 use crate::parsing::Rule;
+
+#[cfg(feature = "colorization")]
+use alloc::vec::Vec;
+#[cfg(feature = "colorization")]
+use colored::Colorize;
+#[cfg(feature = "colorization")]
+use string_colorization::{foreground, style};
+
 
 /// Error happened while parsing, this can happen due to a grammar parsing error, or if the syntax
 /// it's right, because the of a series of [ASTBuildingError].
@@ -29,6 +33,15 @@ pub enum ParsingError<'input> {
     /// * For accessibility, please, read the [colored] create used by [simple_detailed_error],
     /// which uses [NO_COLOR](https://no-color.org/).
     CouldntBuildAST(SimpleError<'input>),
+}
+
+impl<'input> ParsingError<'input> {
+    pub fn couldnt_build_ast_error(self) -> Option<SimpleError<'input>> {
+        match self{
+            Self::CouldntBuildAST(error)=>Some(error),
+            _=>None
+        }
+    }
 }
 
 impl<'input> Display for ParsingError<'input> {
@@ -204,7 +217,7 @@ impl<'input> SimpleErrorDetail for ASTBuildingError<'input> {
                 colorization_markers.push((function_name, style::Clear + foreground::Red));
             }
             ASTBuildingError::PropertyFunctionNotFound { preferred_property_to_find, original_property, typename } => {
-                let typename = typename.as_ref().map(|v|&**v).unwrap_or("Unknown type");
+                let typename = typename.as_ref().map(|v| &**v).unwrap_or("Unknown type");
                 explanation = format!("The type {typename} does not have a property named {} as there is no associated function named {preferred_property_to_find} nor {original_property}.",
                                       original_property.bold()
                 );

@@ -18,19 +18,6 @@ pub enum MoonValue {
     Array(Vec<MoonValue>),
 }
 
-impl MoonValue {
-    pub(crate) fn type_name(&self) -> &'static str {
-        match self {
-            Self::Null => MoonValueKind::Null.get_moon_value_type().unwrap(),
-            Self::Boolean(_) => MoonValueKind::Boolean.get_moon_value_type().unwrap(),
-            Self::Integer(_) => MoonValueKind::Integer.get_moon_value_type().unwrap(),
-            Self::Decimal(_) => MoonValueKind::Decimal.get_moon_value_type().unwrap(),
-            Self::String(_) => MoonValueKind::String.get_moon_value_type().unwrap(),
-            Self::Array(_) => MoonValueKind::Array.get_moon_value_type().unwrap(),
-        }
-    }
-}
-
 impl TryFrom<FullValue> for MoonValue {
     type Error = ();
     fn try_from(value: FullValue) -> Result<Self, Self::Error> {

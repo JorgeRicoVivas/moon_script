@@ -3,23 +3,30 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="ALL" />
   </component>
+  <component name="CargoProjectFeatures">
+    <cargoProject file="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$">
+        <feature name="std" />
+      </package>
+    </cargoProject>
+  </component>
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Added array access">
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Types can be now passed from MoonValueKind or directly by type / value">
+      <change afterPath="$PROJECT_DIR$/LICENSE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lazy_lock.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/context.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/execution/ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/ast.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/execution/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/execution/optimized_ast.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/optimized_ast.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/function/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/function/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/value.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/value.rs" afterDir="false" />
     </list>
@@ -44,7 +51,9 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/.cargo/registry/src/index.crates.io-6f17d22bba15001f/log-0.4.21/src/macros.rs" root0="SKIP_INSPECTION" />
     <setting file="file://$USER_HOME$/.cargo/registry/src/index.crates.io-6f17d22bba15001f/pest-2.7.10/src/pratt_parser.rs" root0="SKIP_INSPECTION" />
+    <setting file="file://$USER_HOME$/AppData/Local/JetBrains/RustRover2024.1/intellij-rust/stdlib-local-copy/1.83.0-nightly-7add9b667f08acc83c62583186dc1353253b4f32/library/core/src/convert/mod.rs" root0="SKIP_INSPECTION" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="wdpjhhst" />
@@ -61,16 +70,27 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Cargo.Doctest of engine::parse (line 150).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Doctest of parsing::associated_type_of (line 126).executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Doctest of parsing::new (line 65).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_constants.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_functions__Result.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___ast_input_variables.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___input_variables.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___line_error.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___custom_type.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___engine.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test moon_script.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test test::test.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test test::test_array.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test test::test_binary_comparator_and_unary.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_optimizations (1).executor&quot;: &quot;Debug&quot;,
     &quot;Cargo.Test test::test_precedence.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Jorge/RustroverProjects/moon_script_book&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
@@ -79,9 +99,14 @@
     &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Cargo.Doctest of engine::parse (line 150)">
-    <configuration name="Doctest of engine::parse (line 150)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --doc &quot;engine::parse\ (line\ 150)&quot;" />
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Jorge\RustroverProjects\moon_script" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Cargo.Test book_tests::developers_guide___context___line_error">
+    <configuration name="Test book_tests::developers_guide___add_functions__Result" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___add_functions__Result -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -97,8 +122,59 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Doctest of parsing::new (line 65)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --doc &quot;parsing::new\ (line\ 65)&quot;" />
+    <configuration name="Test book_tests::developers_guide___context___ast_input_variables" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___context___ast_input_variables -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test book_tests::developers_guide___context___input_variables" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___context___input_variables -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test book_tests::developers_guide___context___line_error" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___context___line_error -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test book_tests::developers_guide___custom_type" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___custom_type -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -131,8 +207,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test test::test_array" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --lib test::test_array -- --exact" />
+    <configuration name="Test test::test_optimizations" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="test --package moon_script --lib test::test_optimizations -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -141,41 +217,7 @@
       <option name="allFeatures" value="false" />
       <option name="withSudo" value="false" />
       <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test test::test_binary_comparator_and_unary" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --lib test::test_binary_comparator_and_unary -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test test::test_precedence" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --lib test::test_precedence -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
+      <option name="backtrace" value="FULL" />
       <option name="isRedirectInput" value="false" />
       <option name="redirectInputPath" value="" />
       <method v="2">
@@ -184,11 +226,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Doctest of engine::parse (line 150)" />
-        <item itemvalue="Cargo.Doctest of parsing::new (line 65)" />
-        <item itemvalue="Cargo.Test test::test_array" />
-        <item itemvalue="Cargo.Test test::test_binary_comparator_and_unary" />
-        <item itemvalue="Cargo.Test test::test_precedence" />
+        <item itemvalue="Cargo.Test book_tests::developers_guide___context___line_error" />
+        <item itemvalue="Cargo.Test book_tests::developers_guide___context___ast_input_variables" />
+        <item itemvalue="Cargo.Test book_tests::developers_guide___context___input_variables" />
+        <item itemvalue="Cargo.Test book_tests::developers_guide___custom_type" />
+        <item itemvalue="Cargo.Test book_tests::developers_guide___add_functions__Result" />
       </list>
     </recent_temporary>
   </component>
@@ -229,6 +271,8 @@
       <workItem from="1725650527221" duration="1633000" />
       <workItem from="1725814862416" duration="12719000" />
       <workItem from="1725837155551" duration="23000" />
+      <workItem from="1725881769591" duration="25274000" />
+      <workItem from="1725968768614" duration="5181000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -478,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1725570652390</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Types can be now passed from MoonValueKind or directly by type / value">
+      <option name="closed" value="true" />
+      <created>1725894975524</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1725894975524</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -486,7 +538,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
-    <MESSAGE value="ParsingError can now turn into SimpleError" />
     <MESSAGE value="No longer using Rc but Arc instead" />
     <MESSAGE value="VBFunction now also is Send and Sync" />
     <MESSAGE value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
@@ -511,6 +562,7 @@
     <MESSAGE value="Corrected operator precedence" />
     <MESSAGE value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
     <MESSAGE value="Added array access" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added array access" />
+    <MESSAGE value="Types can be now passed from MoonValueKind or directly by type / value" />
+    <option name="LAST_COMMIT_MESSAGE" value="Types can be now passed from MoonValueKind or directly by type / value" />
   </component>
 </project>

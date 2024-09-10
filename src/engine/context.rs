@@ -19,7 +19,6 @@ pub struct ContextBuilder {
     pub(crate) past_variables: Vec<(usize, Vec<InputVariable>)>,
     pub(crate) next_block_level: usize,
     pub(crate) started_parsing: bool,
-    pub(crate) variables_should_inline: bool,
     pub(crate) start_parsing_position_offset: (usize, usize),
     pub(crate) parsing_position_column_is_fixed: bool,
 }
@@ -37,7 +36,6 @@ impl Default for ContextBuilder {
             past_variables: vec![],
             next_block_level: 0,
             started_parsing: false,
-            variables_should_inline: true,
             start_parsing_position_offset: (0, 0),
             parsing_position_column_is_fixed: false,
         };
@@ -55,19 +53,6 @@ impl ContextBuilder {
     pub(crate) fn current_depth(&self) -> usize {
         self.in_use_variables.len()
     }
-
-    pub(crate) fn forbid_variables_from_inlining(&mut self) {
-        self.in_use_variables.iter_mut().flat_map(|(_, v)| v)
-            .for_each(|variable| { variable.global_can_inline = false });
-        self.variables_should_inline = false;
-    }
-
-    pub(crate) fn permit_variables_to_inline(&mut self) {
-        self.in_use_variables.iter_mut().flat_map(|(_, v)| v)
-            .for_each(|variable| { variable.global_can_inline = true });
-        self.variables_should_inline = true;
-    }
-
 
     pub(crate) fn push_block_level(&mut self) {
         self.in_use_variables.push((self.next_block_level, Vec::new()));
@@ -210,17 +195,14 @@ pub struct InputVariable {
     pub(crate) type_is_valid_up_to_depth: usize,
     pub(crate) value_is_valid_up_to_depth: usize,
     pub(crate) can_inline: bool,
-    pub(crate) global_can_inline: bool,
 }
 
 
 impl InputVariable {
     pub(crate) fn inlineable_value(&mut self) -> Option<FullValue> {
-        if self.can_inline && self.global_can_inline {
-            self.current_known_value.clone()
-        } else {
-            self.can_inline = false;
-            None
+        match self.can_inline{
+            true => self.current_known_value.clone(),
+            false => None
         }
     }
 
@@ -244,7 +226,6 @@ impl InputVariable {
             value_is_valid_up_to_depth: 0,
             type_is_valid_up_to_depth: 0,
             can_inline: true,
-            global_can_inline: true,
         }
     }
 
@@ -267,8 +248,8 @@ impl InputVariable {
         if self.associated_type_name.is_none(){
             self = self.associated_type_of::<ReturnT>();
         }
-        self.first_value = FullValue::Function(ASTFunction { function: function.clone().abstract_function(), args: Vec::new() });
-        self.current_known_value = Some(FullValue::Function(ASTFunction { function: function.abstract_function(), args: Vec::new() }));
+        self.first_value = FullValue::Function(ASTFunction { function: function.abstract_function(), args: Vec::new() });
+        self.current_known_value = Some(self.first_value.clone());
         self
     }
 

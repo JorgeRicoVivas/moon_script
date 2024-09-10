@@ -165,7 +165,6 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                             type_is_valid_up_to_depth: context.current_depth(),
                             value_is_valid_up_to_depth: context.current_depth(),
                             can_inline: true,
-                            global_can_inline: context.variables_should_inline,
                         };
                         context.push_variable_internal(compiletime_variable_information, declare_variable_as_new);
                         Ok(Vec::new())
@@ -178,7 +177,6 @@ pub fn build_token<'input>(token: Pair<'input, Rule>, base: &Engine, context: &m
                             type_is_valid_up_to_depth: context.current_depth(),
                             value_is_valid_up_to_depth: context.current_depth(),
                             can_inline: false,
-                            global_can_inline: context.variables_should_inline,
                         };
                         let (block_level, var_index) = context.push_variable_internal(compiletime_variable_information, declare_variable_as_new);
                         Ok(vec![Statement::UnoptimizedAssignament { block_level, var_index, value }])

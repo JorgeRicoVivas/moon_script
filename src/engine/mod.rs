@@ -1,6 +1,5 @@
 use alloc::string::{String, ToString};
 use log::trace;
-use pest::pratt_parser::{Assoc, Op, PrattParser};
 use pest::Parser;
 use simple_detailed_error::SimpleErrorDetail;
 
@@ -13,8 +12,10 @@ use crate::reduced_value_impl::impl_operators;
 use crate::value::MoonValue;
 use crate::{parsing, HashMap, MoonValueKind};
 
+
 pub mod context;
 
+#[derive(Clone)]
 /// Scripting engine, it allows to create runnable ASTs, and also to give functions and constant
 /// values for said scripts
 pub struct Engine {
@@ -32,12 +33,12 @@ pub struct Engine {
     binary_operators: HashMap<String, FunctionInfo>,
     //OperatorName->Fn()
     unary_operators: HashMap<String, FunctionInfo>,
-    binary_operation_parser: PrattParser<Rule>,
 
     constants: HashMap<String, Constant>,
 }
 
 /// Defines a constant that will be inlined on scripts.
+#[derive(Clone)]
 pub struct Constant {
     pub(crate) value:MoonValue,
     pub(crate) type_name:Option<String>,
@@ -86,13 +87,6 @@ impl<T:Into<MoonValue>> From<T> for Constant{
 
 impl Default for Engine {
     fn default() -> Self {
-        let sums_ops = Op::infix(Rule::sum, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left);
-        let mul_ops = Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left) | Op::infix(Rule::rem, Assoc::Left);
-        let comparators_ops = Op::infix(Rule::eq, Assoc::Left) | Op::infix(Rule::neq, Assoc::Left)
-            | Op::infix(Rule::gt, Assoc::Left) | Op::infix(Rule::gte, Assoc::Left)
-            | Op::infix(Rule::lt, Assoc::Left) | Op::infix(Rule::lte, Assoc::Left);
-        let logic_gate_comparators = Op::infix(Rule::or, Assoc::Left) | Op::infix(Rule::xor, Assoc::Left)
-            | Op::infix(Rule::and, Assoc::Left);
         let res = Self {
             associated_functions: Default::default(),
             functions: Default::default(),
@@ -108,12 +102,6 @@ impl Default for Engine {
                     (name.to_string(), FunctionInfo::new(function).inline())
                 })
                 .collect(),
-            binary_operation_parser: PrattParser::new()
-                .op(logic_gate_comparators)
-                .op(comparators_ops)
-                .op(sums_ops)
-                .op(mul_ops)
-            ,
             constants: Default::default(),
         };
         #[cfg(feature = "std")]
@@ -269,7 +257,5 @@ impl Engine {
     pub(crate) fn constants(&self) -> &HashMap<String, Constant> {
         &self.constants
     }
-    pub(crate) fn binary_operation_parser(&self) -> &PrattParser<Rule> {
-        &self.binary_operation_parser
-    }
+
 }

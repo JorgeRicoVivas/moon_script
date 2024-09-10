@@ -3,7 +3,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
-
+use core::fmt::{Display, Formatter};
 use simple_detailed_error::{SimpleErrorDetail, SimpleErrorExplanation};
 
 use ast::Statement;
@@ -35,7 +35,7 @@ impl RuntimeError {
             RuntimeError::CannotTurnPredicateToBool { type_of_statement, function_error_message } =>
                 format!("Could not parse predicate of a {type_of_statement} block due to: {function_error_message}"),
             RuntimeError::FunctionError { function_error_message } =>
-                format!("Could execute a function due to: {function_error_message}"),
+                format!("Could not execute a function due to: {function_error_message}"),
             RuntimeError::CannotParseArgument => "A function argument type is wrong".to_string(),
             RuntimeError::AnArgumentIsMissing => "A function is missing an argument".to_string(),
         }
@@ -45,6 +45,12 @@ impl RuntimeError {
 impl SimpleErrorDetail for RuntimeError {
     fn explain_error(&self) -> SimpleErrorExplanation {
         SimpleErrorExplanation::new().explanation(self.explain())
+    }
+}
+
+impl Display for RuntimeError{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.explain_error().to_display_struct(true).to_string())
     }
 }
 

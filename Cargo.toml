@@ -3,6 +3,16 @@ name = "moon_script"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Jorge Rico Vivas <jorgericosoftware@gmail.com>"]
+description = "Fast and simple scripting language based on Rust."
+repository = "https://github.com/JorgeRicoVivas/moon_script_book"
+keywords = ["scripting", "scripting-engine", "scripting-language", "script", "scripts"]
+categories = ["no-std", "embedded", "game-development", "parser-implementations"]
+license-file = "LICENSE.txt"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+documentation = "https://jorgericovivas.github.io/moon_script_book/"
 
 [lib]
 

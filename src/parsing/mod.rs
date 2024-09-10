@@ -2,8 +2,9 @@ use alloc::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::mem;
-use std::collections::HashSet;
-use std::sync::LazyLock;
+
+
+
 use pest::iterators::Pair;
 use pest_derive::Parser;
 use simple_detailed_error::SimpleError;
@@ -15,8 +16,11 @@ use crate::engine::Engine;
 use crate::execution::ast::{Statement, AST};
 use crate::execution::RuntimeVariable;
 use crate::function::{MoonFunction, ToAbstractFunction};
-use crate::HashMap;
 use crate::value::FullValue;
+use crate::HashMap;
+use crate::HashSet;
+use crate::LazyLock;
+
 
 pub(crate) mod value_parsing;
 pub(crate) mod statement_parsing;
@@ -85,7 +89,7 @@ impl FunctionDefinition {
     pub fn new<Name: Into<String>, Dummy, Params, ReturnValue, Function, AbstractFunction: ToAbstractFunction<Params, ReturnValue, Function, Dummy>>
     (function_name: Name, function: AbstractFunction) -> Self {
         let mut function_info = FunctionInfo::new_raw(function.abstract_function());
-        function_info.return_type_name=MoonValueKind::get_kind_string_of::<ReturnValue>();
+        function_info.return_type_name = MoonValueKind::get_kind_string_of::<ReturnValue>();
         Self {
             function_info: function_info,
             function_name: function_name.into(),
@@ -194,7 +198,7 @@ static RESERVED_MOON_VALUE_KINDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
         .collect::<HashSet<String>>()
 });
 
-pub(crate) static RUST_TYPES_TO_MOON_VALUE_KINDS: LazyLock<HashMap<&'static str, String>> = LazyLock::new(||{
+pub(crate) static RUST_TYPES_TO_MOON_VALUE_KINDS: LazyLock<HashMap<&'static str, String>> = LazyLock::new(|| {
     [
         (core::any::type_name::<()>(), MoonValueKind::Null),
         (core::any::type_name::<bool>(), MoonValueKind::Boolean),
@@ -214,22 +218,49 @@ pub(crate) static RUST_TYPES_TO_MOON_VALUE_KINDS: LazyLock<HashMap<&'static str,
         (core::any::type_name::<f64>(), MoonValueKind::Decimal),
         (core::any::type_name::<String>(), MoonValueKind::String),
     ]
-        .map(|(rust_type, moon_value_kind)|{
+        .map(|(rust_type, moon_value_kind)| {
             (rust_type, moon_value_kind.get_moon_value_type().unwrap().to_string())
         })
         .into_iter()
         .collect()
 });
 
+
+static RESULT_TYPE_PREFIX: LazyLock<String> = LazyLock::new(|| {
+    let result = core::any::type_name::<Result<(), ()>>();
+    let result_start = result.find(r"<").unwrap();
+    result[0..result_start + 1].to_string()
+});
+
+fn decouple_ok_argument_from_its_result(type_in_use: &str) -> Option<&str> {
+    if !type_in_use.starts_with(&*RESULT_TYPE_PREFIX) { return None; };
+
+    let type_in_use = &type_in_use[RESULT_TYPE_PREFIX.len()..];
+    let mut opened_brackets_and_diamonds = 0_usize;
+    let end = type_in_use.chars().enumerate().filter(|(_, char)| {
+        match char {
+            '(' | '<' => opened_brackets_and_diamonds += 1,
+            ')' | '>' => opened_brackets_and_diamonds -= 1,
+            ',' => return true,
+            _ => {}
+        }
+        false
+    }).next().unwrap().0;
+    Some(&type_in_use[..end])
+}
+
 impl MoonValueKind<'_> {
     pub(crate) fn get_kind_string_of<T>() -> Option<String> {
         RUST_TYPES_TO_MOON_VALUE_KINDS
             .get(core::any::type_name::<T>()).cloned()
+            .map(|string|
+                decouple_ok_argument_from_its_result(&string).map(|s| s.to_string()).unwrap_or(string)
+            )
             .or_else(||
                 MoonValueKind::from(core::any::type_name::<T>())
                     .get_moon_value_type().map(|string| string.to_string())
             )
-            .filter(|name|!name.eq("null"))
+            .filter(|name| !name.eq("null"))
     }
 
     pub(crate) fn get_moon_value_type(&self) -> Option<&str> {

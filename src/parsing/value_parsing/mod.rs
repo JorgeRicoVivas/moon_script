@@ -2,10 +2,12 @@ use alloc::collections::VecDeque;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use alloc::{format, vec};
+use alloc::string::String;
+
 use core::mem;
 use core::str::FromStr;
-
 use pest::iterators::Pair;
+use pest::pratt_parser::{Assoc, Op, PrattParser};
 use simple_detailed_error::{SimpleError, SimpleErrorDetail};
 
 use crate::engine::context::ContextBuilder;
@@ -16,6 +18,22 @@ use crate::function::ToAbstractFunction;
 use crate::parsing::error::ASTBuildingError;
 use crate::parsing::{FunctionInfo, Rule};
 use crate::value::{FullValue, MoonValue};
+use crate::LazyLock;
+
+static BINARY_OPERATION_PARSER: LazyLock<PrattParser<Rule>> = LazyLock::new(||{
+    let sums_ops = Op::infix(Rule::sum, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left);
+    let mul_ops = Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left) | Op::infix(Rule::rem, Assoc::Left);
+    let comparators_ops = Op::infix(Rule::eq, Assoc::Left) | Op::infix(Rule::neq, Assoc::Left)
+        | Op::infix(Rule::gt, Assoc::Left) | Op::infix(Rule::gte, Assoc::Left)
+        | Op::infix(Rule::lt, Assoc::Left) | Op::infix(Rule::lte, Assoc::Left);
+    let logic_gate_comparators = Op::infix(Rule::or, Assoc::Left) | Op::infix(Rule::xor, Assoc::Left)
+        | Op::infix(Rule::and, Assoc::Left);
+    PrattParser::new()
+        .op(logic_gate_comparators)
+        .op(comparators_ops)
+        .op(sums_ops)
+        .op(mul_ops)
+});
 
 pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, context: &mut ContextBuilder) -> Result<FullValue, Vec<SimpleError<'input>>> {
     while token.as_rule().eq(&Rule::VALUE) {
@@ -26,7 +44,7 @@ pub fn build_value_token<'input>(mut token: Pair<'input, Rule>, base: &Engine, c
     log::trace!("Parsing complex token {token_rule:?} = {token_str}");
     let res = match token.as_rule() {
         Rule::BINARY_OPERATION => {
-            let res = &base.binary_operation_parser()
+            let res = BINARY_OPERATION_PARSER
                 .map_primary(|primary| {
                     build_value_token(primary, base, context)
                 })
