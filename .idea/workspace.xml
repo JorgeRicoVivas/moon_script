@@ -14,21 +14,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Types can be now passed from MoonValueKind or directly by type / value">
-      <change afterPath="$PROJECT_DIR$/LICENSE.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/lazy_lock.rs" afterDir="false" />
+    <list default="true" id="9a6bfc8d-b13a-4209-8f31-6586f1c3f1c5" name="Changes" comment="Documentation added">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/context.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/execution/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parsing/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/statement_parsing/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/parsing/value_parsing/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/value.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/value.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,6 +24,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -104,24 +93,7 @@
       <recent name="C:\Users\Jorge\RustroverProjects\moon_script" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Test book_tests::developers_guide___context___line_error">
-    <configuration name="Test book_tests::developers_guide___add_functions__Result" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___add_functions__Result -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Cargo.Test book_tests::developers_guide___engine">
     <configuration name="Test book_tests::developers_guide___context___ast_input_variables" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package moon_script --lib book_tests::developers_guide___context___ast_input_variables -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -190,6 +162,23 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test book_tests::developers_guide___engine" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package moon_script --lib book_tests::developers_guide___engine -- --exact --no-defaults-features" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Test moon_script" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="test --workspace" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -226,11 +215,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test book_tests::developers_guide___engine" />
         <item itemvalue="Cargo.Test book_tests::developers_guide___context___line_error" />
         <item itemvalue="Cargo.Test book_tests::developers_guide___context___ast_input_variables" />
         <item itemvalue="Cargo.Test book_tests::developers_guide___context___input_variables" />
         <item itemvalue="Cargo.Test book_tests::developers_guide___custom_type" />
-        <item itemvalue="Cargo.Test book_tests::developers_guide___add_functions__Result" />
       </list>
     </recent_temporary>
   </component>
@@ -272,7 +261,7 @@
       <workItem from="1725814862416" duration="12719000" />
       <workItem from="1725837155551" duration="23000" />
       <workItem from="1725881769591" duration="25274000" />
-      <workItem from="1725968768614" duration="5181000" />
+      <workItem from="1725968768614" duration="5918000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented Default for AST and OptimizedAST">
       <option name="closed" value="true" />
@@ -530,15 +519,33 @@
       <option name="project" value="LOCAL" />
       <updated>1725894975524</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Documentation added">
+      <option name="closed" value="true" />
+      <created>1725985684406</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1725985684406</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
-    <MESSAGE value="No longer using Rc but Arc instead" />
     <MESSAGE value="VBFunction now also is Send and Sync" />
     <MESSAGE value="Function Definition now allows to be cloned and debugged and also uses builder functions for name and function" />
     <MESSAGE value="Added the missing || operator" />
@@ -563,6 +570,7 @@
     <MESSAGE value="Corrected unary operator grouping binary operators even when no parenthesis is indicated" />
     <MESSAGE value="Added array access" />
     <MESSAGE value="Types can be now passed from MoonValueKind or directly by type / value" />
-    <option name="LAST_COMMIT_MESSAGE" value="Types can be now passed from MoonValueKind or directly by type / value" />
+    <MESSAGE value="Documentation added" />
+    <option name="LAST_COMMIT_MESSAGE" value="Documentation added" />
   </component>
 </project>

@@ -82,6 +82,7 @@ mod test {
     use crate::{FunctionDefinition, InputVariable};
     use log::Level;
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_optimizations() {
         let mut engine = Engine::new();
@@ -184,11 +185,12 @@ mod test {
             .associated_type("agent")
             .lazy_value(|| 46397));
 
-        engine.parse(r#"print("Should not be true: "+(!agent.is_flag() && agent.get_bool())); "#, context)
-            .unwrap().executor().execute().expect("TODO: panic message");
+        let res : bool = engine.parse(r#"(!agent.is_flag() && agent.get_bool())"#, context)
+            .unwrap().executor().execute().expect("TODO: panic message").try_into().unwrap();
+        assert_eq!(false, res);
     }
 
-    #[test]
+    #[cfg_attr(not(feature = "std"), test)]
     fn test_custom_unnamed_type() {
         let _ = simple_logger::init_with_level(log::Level::Trace);
 
@@ -226,7 +228,10 @@ mod test {
                                                                     },
         ).associated_type_name("effect"));
 
-        engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()| println!("Internal killing"))
+        engine.add_function(crate::parsing::FunctionDefinition::new("kill", |()| {
+            #[cfg(feature = "std")]
+            println!("Removing effect");
+        })
             .associated_type_name("effect").known_return_type_name("effect"));
         engine.add_function(crate::parsing::FunctionDefinition::new("effect", |()| 1)
             .associated_type_name("effect").known_return_type_name("effect"));
@@ -236,15 +241,18 @@ mod test {
 
 
         "#, context).map_err(|error| panic!("{error}"));
-        println!("{ast:#?}");
-        println!("{:#?}", ast.unwrap().executor().execute());
+        ast.unwrap().executor().execute().unwrap();
     }
 }
 
 #[cfg(test)]
 mod book_tests {
     use crate::{ContextBuilder, Engine, FunctionDefinition, InputVariable, MoonValue};
+    use alloc::format;
+    use alloc::string::{String, ToString};
 
+
+    #[cfg(feature = "std")]
     #[test]
     fn developers_guide___engine() {
         let engine = Engine::new();
@@ -316,6 +324,7 @@ mod book_tests {
         let error = engine.parse(r###"sum_two(100,200);"###, ContextBuilder::new())
             .err().unwrap().couldnt_build_ast_error().unwrap().as_display_struct(false);
         let compilation_error = format!("{}", error);
+        #[cfg(feature = "std")]
         println!("{}", compilation_error);
 
         assert_eq!(compilation_error.replace(" ", "").replace("\n", ""), (r###"
@@ -444,6 +453,7 @@ calling_an_non_existing_function(sum)
         // specifying the position, don't worry; you will likely never do this.
         let error = engine.parse(script, context_builder).err().unwrap();
 
+        #[cfg(feature = "std")]
         // Shows the error to the user, so he can look up what was wrong.
         println!("{error}");
 
