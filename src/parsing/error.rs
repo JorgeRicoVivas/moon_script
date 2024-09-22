@@ -18,7 +18,7 @@ use string_colorization::{foreground, style};
 
 /// Error happened while parsing, this can happen due to a grammar parsing error, or if the syntax
 /// it's right, because the of a series of [ASTBuildingError].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParsingError<'input> {
     /// Happens if the script doesn't match Moon Script's grammar.
     Grammar(pest::error::Error<Rule>),
@@ -50,6 +50,15 @@ impl<'input> Display for ParsingError<'input> {
             ParsingError::Grammar(pest_error) => f.write_str(&format!("{pest_error}")),
             ParsingError::CouldntBuildAST(simple_error) => f.write_str(&format!("{}", simple_error.as_display_struct(true))),
         }
+    }
+}
+
+impl<'input> ParsingError<'input> {
+
+    /// Turns this parsing error into a [SimpleError] that can easily be displayed to developers for
+    /// discovering what was wrong when they wrote a Script.
+    pub fn to_simple_error(self) -> SimpleError<'input> {
+        SimpleError::from(self)
     }
 }
 
