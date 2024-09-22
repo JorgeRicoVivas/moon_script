@@ -56,39 +56,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Doctest of engine::parse (line 150).executor": "Run",
-    "Cargo.Doctest of parsing::associated_type_of (line 126).executor": "Run",
-    "Cargo.Doctest of parsing::new (line 65).executor": "Run",
-    "Cargo.Test book_tests::developers_guide___add_constants.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___add_functions.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___add_functions__Result.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___context___ast_input_variables.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___context___input_variables.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___context___line_error.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___custom_type.executor": "Run",
-    "Cargo.Test book_tests::developers_guide___engine (1).executor": "Run",
-    "Cargo.Test book_tests::developers_guide___engine.executor": "Run",
-    "Cargo.Test moon_script.executor": "Run",
-    "Cargo.Test test::test.executor": "Run",
-    "Cargo.Test test::test_array.executor": "Run",
-    "Cargo.Test test::test_binary_comparator_and_unary.executor": "Run",
-    "Cargo.Test test::test_optimizations (1).executor": "Debug",
-    "Cargo.Test test::test_precedence.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Jorge/RustroverProjects/moon_script_book",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Doctest of engine::parse (line 150).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Doctest of parsing::associated_type_of (line 126).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Doctest of parsing::new (line 65).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_constants.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___add_functions__Result.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___ast_input_variables.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___input_variables.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___context___line_error.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___custom_type.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___engine (1).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test book_tests::developers_guide___engine.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test moon_script.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_array.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_binary_comparator_and_unary.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test test::test_optimizations (1).executor&quot;: &quot;Debug&quot;,
+    &quot;Cargo.Test test::test_precedence.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Jorge/RustroverProjects/moon_script_book&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Jorge\RustroverProjects\moon_script" />
